@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="self.xf.mapper.HeadMapper">
+    <insert id="save" parameterType="java.util.List">
+        insert into hnzf_enterprise_info_head (
+        `fullName`,
+        `socialCreditCode`,
+        `lawMan`,
+        `addrCo`,
+        `lawManTel`,
+        `customsCodeName`,
+        `opDate`,
+        `validTypeName`,
+        `declareSccode`,
+        `inputSccode`,
+        `inputCode`,
+        `declareCode`,
+        `inputName`,
+        `declareName`
+
+                                               ) values
+        <foreach collection="requestList" item="item"  separator=",">
+            (
+            #{item.fullName},
+            #{item.socialCreditCode},
+            #{item.lawMan},
+            #{item.addrCo},
+            #{item.lawManTel},
+            #{item.customsCodeName},
+            #{item.opDate},
+            #{item.validTypeName},
+            #{item.declareSccode},
+            #{item.inputSccode},
+            #{item.inputCode},
+            #{item.declareCode},
+            #{item.inputName},
+            #{item.declareName}
+             )
+        </foreach>
+    </insert>
+    
+
+</mapper>

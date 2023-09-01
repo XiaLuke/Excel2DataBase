@@ -1,0 +1,19 @@
+server:
+  port: 9898
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql:///test?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+    username: root
+    password: 987654
+
+#    url: jdbc:oracle:thin:@192.168.100.107/orcl
+#    username: CD1_ZHKG_MHWZ
+#    password: CD1_ZHKG_MHWZ
+#    driver-class-name: oracle.jdbc.driver.OracleDriver
+mybatis:
+  mapper-locations: classpath*:mapper/*.xml
+  configuration:
+    jdbcTypeForNull: "null"
+  type-aliases-package: self.xf.mapper
