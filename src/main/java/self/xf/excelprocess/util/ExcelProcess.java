@@ -32,6 +32,7 @@ public class ExcelProcess {
                 continue;
             }
 
+
             // get the class name of the entity
             String className = clazz.getName();
             Object entity = Class.forName(className).newInstance();
