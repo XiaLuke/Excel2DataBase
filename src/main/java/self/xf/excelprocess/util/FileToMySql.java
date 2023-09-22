@@ -3,22 +3,24 @@ package self.xf.excelprocess.util;
 import cn.hutool.extra.pinyin.PinyinUtil;
 import org.apache.poi.hssf.usermodel.HSSFDateUtil;
 import org.apache.poi.ss.usermodel.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
+import self.xf.excelprocess.mapper.TableListMapper;
 
 import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 @Component
 public class FileToMySql {
     ThreadLocal<Map<String,Object>> threadLocal = new ThreadLocal<>();
+
+    @Autowired
+    DataBase base;
 
     public ArrayList<Object> fileProcess(MultipartFile file) {
         Map<String,Object> map  = createNewSheet(file);
@@ -28,15 +30,9 @@ public class FileToMySql {
 
         ArrayList<Object> result = new ArrayList<>();
 
-        // 判断fileName是中文还是英文
-        boolean isChinese = false;
-        for (int i = 0; i < fileName.length(); i++) {
-            char c = fileName.charAt(i);
-            if (c >= 0x4E00 && c <= 0x9FA5) {
-                isChinese = true;
-                break;
-            }
-        }
+        base.getTablename(fileName,headRow);
+
+        // 判断temp是否在list中
 
         return result;
     }
