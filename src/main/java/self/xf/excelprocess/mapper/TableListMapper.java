@@ -15,6 +15,6 @@ public interface TableListMapper {
     List<String> columnList(String tableName);
 
     // 获取建表语句
-    @Select("show create table hey_xxx")
+    @Select("show create table t_bank")
     Map<String,String> createTable();
 }
