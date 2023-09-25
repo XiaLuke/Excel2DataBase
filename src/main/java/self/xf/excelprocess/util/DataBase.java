@@ -15,11 +15,13 @@ import java.util.Map;
 public class DataBase {
     @Autowired
     private TableListMapper tableListMapper;
-    public List<String> tableList(){
+
+    public List<String> tableList() {
         // 获取当前配置文件中数据连接获取当前数据的表名
         return tableListMapper.tableList();
     }
-    public void getTablename(Map<String, Object> map){
+
+    public void getTablename(Map<String, Object> map) {
         String fileName = map.get("fileName").toString();
         List<ExcelFormat> list = (List<ExcelFormat>) map.get("sql");
         List<String> tableList = tableList();
@@ -34,30 +36,31 @@ public class DataBase {
         }
         // 将fileName转换为拼音
         String temp = "";
-        if(isChinese){
+        if (isChinese) {
             temp = PinyinUtil.getPinyin(fileName, "");
         }
         temp = fileName;
         // 如果temp结尾是以.xlsx结尾的，那么就去掉.xlsx
-        if(temp.endsWith(".xlsx")){
-            temp = temp.substring(0,temp.length()-5);
+        if (temp.endsWith(".xlsx")) {
+            temp = temp.substring(0, temp.length() - 5);
         }
         // 如果temp结尾是以.xls结尾的，那么就去掉.xls
-        if(temp.endsWith(".xls")){
-            temp = temp.substring(0,temp.length()-4);
+        if (temp.endsWith(".xls")) {
+            temp = temp.substring(0, temp.length() - 4);
         }
 //        if(tableList.contains(temp)){
-            // 获取表中的字段，没有的字段进行追加
-            filterField(list,fileName);
+        // 获取表中的字段，没有的字段进行追加
+        filterField(list, fileName);
 //        }
     }
-    public void filterField(List<ExcelFormat> list,String tableName){
+
+    public void filterField(List<ExcelFormat> list, String tableName) {
         // list中包含字段名，字段类型
-        if(tableName.endsWith(".xlsx")){
-            tableName = tableName.substring(0,tableName.length()-5);
+        if (tableName.endsWith(".xlsx")) {
+            tableName = tableName.substring(0, tableName.length() - 5);
         }
-        if(tableName.endsWith(".xls")){
-            tableName = tableName.substring(0,tableName.length()-4);
+        if (tableName.endsWith(".xls")) {
+            tableName = tableName.substring(0, tableName.length() - 4);
         }
         // 如果tableName中包含中文，那么就转换为拼音
         boolean isChinese = false;
@@ -68,37 +71,37 @@ public class DataBase {
                 break;
             }
         }
-        if(isChinese){
+        if (isChinese) {
             tableName = PinyinUtil.getPinyin(tableName, "");
         }
-        /*
-        * Create Table -> CREATE TABLE `t_bank` (
-  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '个人id',
-  `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT '姓名',
-  `amount` int DEFAULT NULL COMMENT '余额\r\n',
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
-        * */
-        Map<String, String> table = tableListMapper.createTable();
-        String sqlHead ="create table "+tableName+"(";
-        StringBuffer sql = new StringBuffer(sqlHead);
-        list.forEach(item->{
-            String name = item.getName();
-            Object type = item.getType();
-            String typeValue = getType(type);
-            sql.append(name+" "+typeValue+",");
-        });
-        sql.deleteCharAt(sql.length()-1);
-        sql.append(") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci");
-        System.out.println(sql.toString());
+
+        String sql = createTable(tableName, list);
+        // TODO: resolve SQL Execution Exceptions
+        tableListMapper.create(sql);
     }
-    private <T> T getType(Object type){
-        if(type instanceof String){
+
+    private <T> T getType(Object type) {
+        if (type.equals("String")) {
             return (T) "varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL";
+        }
+        if (type.equals("double")) {
+            return (T) "decimal(10,2) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL";
         }
         return null;
     }
-    public void createTable(String tableName){
 
+    public String createTable(String tableName, List<ExcelFormat> list) {
+        String sqlHead = "create table " + tableName + "(";
+        StringBuffer sql = new StringBuffer(sqlHead);
+        list.forEach(item -> {
+            String name = item.getName();
+            Object type = item.getType();
+            String typeValue = getType(type);
+            sql.append(name + " " + typeValue + ",");
+        });
+        sql.deleteCharAt(sql.length() - 1);
+        sql.append(") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        System.out.println(sql.toString());
+        return sql.toString();
     }
 }

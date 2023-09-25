@@ -99,7 +99,7 @@ public class ExcelTemplate {
 
 
         // 写入数据到文件
-        try (FileOutputStream outputStream = new FileOutputStream("example.xlsx")) {
+        try (FileOutputStream outputStream = new FileOutputStream("example1.xlsx")) {
             workbook.write(outputStream);
             System.out.println("Excel文件已创建并保存。");
         } catch (IOException e) {

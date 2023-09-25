@@ -1,7 +1,9 @@
 package self.xf.excelprocess.mapper;
 
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 import java.util.List;
 import java.util.Map;
@@ -17,4 +19,7 @@ public interface TableListMapper {
     // 获取建表语句
     @Select("show create table t_bank")
     Map<String,String> createTable();
+
+    @Update("#{sql}")
+    void create(String sql);
 }

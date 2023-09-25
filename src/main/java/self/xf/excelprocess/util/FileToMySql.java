@@ -11,6 +11,7 @@ import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -22,6 +23,7 @@ public class FileToMySql {
     DataBase base;
 
     public ArrayList<Object> fileProcess(MultipartFile file) {
+
         Map<String, Object> map = createNewSheet(file);
         map.put("fileName", file.getOriginalFilename());
         Sheet sheet = map.get("sheet") == null ? null : (Sheet) map.get("sheet");
@@ -40,7 +42,6 @@ public class FileToMySql {
     public Map<String, Object> createNewSheet(MultipartFile file) {
         Map<String, Object> map = createFileStream(file);
         Workbook workbook = (Workbook) map.get("workbook");
-        List<ExcelFormat> headExcelFormat = new ArrayList<>();
         // create a new workbook
         Sheet sheetFirst = workbook.getSheetAt(0);
         // 拿到第一行每个单元格内容作为list中每个对象的name
@@ -52,7 +53,7 @@ public class FileToMySql {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
         int readRow = 0;
-        excelFormats = getFirstCellValueAndType(sheetFirst.getRow(1));
+        excelFormats = getFirstCellValueAndType(sheetFirst.getRow(1), excelFormats);
         for (Row eachRow : sheetFirst) {
             Row newRow = resultSheet.createRow(readRow++);
             int readCell = 0;
@@ -69,7 +70,6 @@ public class FileToMySql {
                     case NUMERIC:
                         double numericCellValue = cell.getNumericCellValue();
                         String value;
-
                         if (HSSFDateUtil.isCellDateFormatted(cell)) {
                             Date date = HSSFDateUtil.getJavaDate(Double.parseDouble(String.valueOf(numericCellValue)));
                             value = dateFormat.format(date);
@@ -82,7 +82,9 @@ public class FileToMySql {
                         }
                         break;
                     case STRING:
-                        newRow.createCell(readCell++).setCellValue(cell.getStringCellValue());
+                        if(!checkIfNotation(cell)){
+                            newRow.createCell(readCell++).setCellValue(cell.getStringCellValue());
+                        }
                         break;
                     case BOOLEAN:
                         newRow.createCell(readCell++).setCellValue(cell.getBooleanCellValue());
@@ -90,14 +92,8 @@ public class FileToMySql {
                     case FORMULA:
                         newRow.createCell(readCell++).setCellValue(cell.getCellFormula());
                         break;
-                    case BLANK:
-                        newRow.createCell(readCell++).setCellValue("");
-                        break;
                     case ERROR:
                         newRow.createCell(readCell++).setCellValue("ERROR");
-                        break;
-                    case _NONE:
-                        newRow.createCell(readCell++).setCellValue("");
                         break;
                     default:
                         newRow.createCell(readCell++).setCellValue("");
@@ -114,14 +110,22 @@ public class FileToMySql {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        map.put("sql",excelFormats);
+        map.put("sql", excelFormats);
         map.put("sheet", resultSheet);
         return map;
     }
 
+    private boolean checkIfNotation(Cell cell) {
+        String str = cell.getStringCellValue();
+        if(str.startsWith("!注意:")){
+            return true;
+        }
+        return false;
+    }
+
     public Map<String, Object> createFileStream(MultipartFile file) {
-        byte[] bytes = new byte[0];
-        Workbook workbook = null;
+        byte[] bytes;
+        Workbook workbook;
         try {
             bytes = file.getBytes();
             ByteArrayInputStream fileStream = new ByteArrayInputStream(bytes);
@@ -151,39 +155,100 @@ public class FileToMySql {
         return result;
     }
 
-    private List<ExcelFormat> getFirstCellValueAndType(Row row) {
-        List<ExcelFormat> result = new ArrayList<>();
-        for (Cell cell : row) {
-            ExcelFormat excelFormat = new ExcelFormat();
+    private List<ExcelFormat> getFirstCellValueAndType(Row row, List<ExcelFormat> excelFormats) {
+        for (int i = 0; i < excelFormats.size(); i++) {
+            ExcelFormat excelFormat = excelFormats.get(i);
+            Cell cell = row.getCell(i);
             CellType cellType = cell.getCellType();
             switch (cellType) {
                 case NUMERIC:
-                    excelFormat.setType("double");
+                    Object num_type = checkNumDataType(cell);
+                    if (Date.class.equals(num_type)) {
+                        excelFormat.setType("Date");
+                    } else if (Integer.class.equals(num_type)) {
+                        excelFormat.setType("Integer");
+                    } else if (Double.class.equals(num_type)) {
+                        excelFormat.setType("Double");
+                    } else {
+                        excelFormat.setType("String");
+                    }
                     break;
                 case STRING:
-                    excelFormat.setType("String");
+                    Object str_type = checkStringDataType(cell);
+                    if (Integer.class.equals(str_type)) {
+                        excelFormat.setType("Integer");
+                    } else if (Double.class.equals(str_type)) {
+                        excelFormat.setType("Double");
+                    } else {
+                        excelFormat.setType("String");
+                    }
                     break;
                 case BOOLEAN:
                     excelFormat.setType("boolean");
                     break;
-                case FORMULA:
-                    excelFormat.setType("formula");
-                    break;
-                case BLANK:
-                    excelFormat.setType("blank");
-                    break;
-                case ERROR:
-                    excelFormat.setType("error");
-                    break;
-                case _NONE:
-                    excelFormat.setType("none");
-                    break;
                 default:
                     excelFormat.setType("undefined");
             }
-//            excelFormat.setValue(cell.getStringCellValue());
-            result.add(excelFormat);
         }
-        return result;
+        return excelFormats;
     }
+
+    private <T> T checkNumDataType(Cell cell) {
+        double numericCellValue = cell.getNumericCellValue();
+        String str = String.valueOf(numericCellValue);
+
+        if (str.contains("-")) {
+            return (T) Date.class;
+        }
+        // 是否包含小数
+        if (str.matches("\\d+(\\.\\d+)?")) {
+            return (T) Double.class;
+        }
+        return null;
+    }
+
+    private <T> T checkStringDataType(Cell cell) {
+        String str = cell.getStringCellValue();
+        if(str.startsWith("\"")){
+            str = str.substring(1);
+        }
+        // 判断str是否全部为数字
+        if (str.matches("\\d+")) {
+            return (T) Integer.class;
+        }
+
+        // 判断str是否能转为Date格式
+        SimpleDateFormat simpleDateFormat = null;
+        if(str.contains("-")){
+            simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            try {
+                Date parse = simpleDateFormat.parse(str);
+                return (T) Date.class;
+            } catch (ParseException e) {
+                return (T) String.class;
+            }
+        }
+        if(str.contains("/")){
+            simpleDateFormat = new SimpleDateFormat("yyyy/MM/dd");
+            try {
+                Date parse = simpleDateFormat.parse(str);
+                return (T) Date.class;
+            } catch (ParseException e) {
+                return (T) String.class;
+            }
+        }
+        return (T) String.class;
+
+    }
+
+    public static void main(String[] args) {
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy/MM/dd");
+        try {
+            Date parse = simpleDateFormat.parse("2023/9/12");
+            System.out.println(111);
+        } catch (ParseException e) {
+            System.out.println(22);
+        }
+    }
+
 }
