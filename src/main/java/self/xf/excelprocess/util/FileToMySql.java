@@ -1,5 +1,6 @@
 package self.xf.excelprocess.util;
 
+import cn.hutool.poi.excel.cell.CellUtil;
 import org.apache.poi.hssf.usermodel.HSSFDateUtil;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,18 +18,19 @@ import java.util.*;
 
 @Component
 public class FileToMySql {
-    ThreadLocal<Map<String, Object>> threadLocal = new ThreadLocal<>();
 
     @Autowired
     DataBase base;
 
     public ArrayList<Object> fileProcess(MultipartFile file) {
 
-        Map<String, Object> map = createNewSheet(file);
+        createNewSheet(file);
+        Map<String, Object> map = GlobalSession.get();
         map.put("fileName", file.getOriginalFilename());
-        Sheet sheet = map.get("sheet") == null ? null : (Sheet) map.get("sheet");
-        String fileName = map.get("fileName") == null ? null : (String) map.get("fileName");
-        Row headRow = sheet.getRow(0);
+
+//        Sheet sheet = map.get("sheet") == null ? null : (Sheet) map.get("sheet");
+//        String fileName = map.get("fileName") == null ? null : (String) map.get("fileName");
+//        Row headRow = sheet.getRow(0);
 
         ArrayList<Object> result = new ArrayList<>();
 
@@ -39,9 +41,12 @@ public class FileToMySql {
         return result;
     }
 
-    public Map<String, Object> createNewSheet(MultipartFile file) {
-        Map<String, Object> map = createFileStream(file);
+    public void createNewSheet(MultipartFile file) {
+        createFileStream(file);
+
+        Map<String, Object> map = GlobalSession.get();
         Workbook workbook = (Workbook) map.get("workbook");
+
         // create a new workbook
         Sheet sheetFirst = workbook.getSheetAt(0);
         // 拿到第一行每个单元格内容作为list中每个对象的name
@@ -53,7 +58,8 @@ public class FileToMySql {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
         int readRow = 0;
-        excelFormats = getFirstCellValueAndType(sheetFirst.getRow(1), excelFormats);
+        int currentConsolidation = 0;
+
         for (Row eachRow : sheetFirst) {
             Row newRow = resultSheet.createRow(readRow++);
             int readCell = 0;
@@ -61,6 +67,9 @@ public class FileToMySql {
 
             for (int i = 0; i < lastCellNum; i++) {
                 Cell cell = eachRow.getCell(i);
+                if (CellUtil.isMergedRegion(cell)) {
+                    splitCell(sheetFirst, currentConsolidation);
+                }
                 if (cell == null) {
                     eachRow.createCell(i).setCellValue("undefined");
                     cell = eachRow.getCell(i);
@@ -82,7 +91,7 @@ public class FileToMySql {
                         }
                         break;
                     case STRING:
-                        if(!checkIfNotation(cell)){
+                        if (!checkIfNotation(cell)) {
                             newRow.createCell(readCell++).setCellValue(cell.getStringCellValue());
                         }
                         break;
@@ -105,25 +114,28 @@ public class FileToMySql {
             workbook.write(fileOut);
             fileOut.close();
             workbook.close();
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        getFirstCellValueAndType(sheetFirst.getRow(1), excelFormats);
         map.put("sql", excelFormats);
         map.put("sheet", resultSheet);
-        return map;
+        GlobalSession.set(map);
+    }
+
+    private void splitCell(Sheet sheet, int currentConsolidation) {
+        sheet.getMergedRegion(currentConsolidation);
     }
 
     private boolean checkIfNotation(Cell cell) {
         String str = cell.getStringCellValue();
-        if(str.startsWith("!注意:")){
+        if (str.startsWith("!注意:")) {
             return true;
         }
         return false;
     }
 
-    public Map<String, Object> createFileStream(MultipartFile file) {
+    public void createFileStream(MultipartFile file) {
         byte[] bytes;
         Workbook workbook;
         try {
@@ -136,7 +148,7 @@ public class FileToMySql {
         }
         Map<String, Object> map = new HashMap<>();
         map.put("workbook", workbook);
-        return map;
+        GlobalSession.set(map);
     }
 
     private List<ExcelFormat> getFirstRowName(Sheet headSheet) {
@@ -209,7 +221,7 @@ public class FileToMySql {
 
     private <T> T checkStringDataType(Cell cell) {
         String str = cell.getStringCellValue();
-        if(str.startsWith("\"")){
+        if (str.startsWith("\"")) {
             str = str.substring(1);
         }
         // 判断str是否全部为数字
@@ -219,7 +231,7 @@ public class FileToMySql {
 
         // 判断str是否能转为Date格式
         SimpleDateFormat simpleDateFormat = null;
-        if(str.contains("-")){
+        if (str.contains("-")) {
             simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
             try {
                 Date parse = simpleDateFormat.parse(str);
@@ -228,7 +240,7 @@ public class FileToMySql {
                 return (T) String.class;
             }
         }
-        if(str.contains("/")){
+        if (str.contains("/")) {
             simpleDateFormat = new SimpleDateFormat("yyyy/MM/dd");
             try {
                 Date parse = simpleDateFormat.parse(str);
@@ -241,14 +253,9 @@ public class FileToMySql {
 
     }
 
+
     public static void main(String[] args) {
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy/MM/dd");
-        try {
-            Date parse = simpleDateFormat.parse("2023/9/12");
-            System.out.println(111);
-        } catch (ParseException e) {
-            System.out.println(22);
-        }
     }
+
 
 }

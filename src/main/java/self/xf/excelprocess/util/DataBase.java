@@ -77,15 +77,18 @@ public class DataBase {
 
         String sql = createTable(tableName, list);
         // TODO: resolve SQL Execution Exceptions
-        tableListMapper.create(sql);
+        tableListMapper.createTable(sql);
     }
 
     private <T> T getType(Object type) {
         if (type.equals("String")) {
-            return (T) "varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL";
+            return (T) "varchar(255) CHARACTER SET utf8mb4  DEFAULT NULL";
         }
         if (type.equals("double")) {
-            return (T) "decimal(10,2) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL";
+            return (T) "decimal(10,2) CHARACTER SET utf8mb4  DEFAULT NULL";
+        }
+        if(type.equals("Integer")){
+            return (T) "int(11) DEFAULT NULL";
         }
         return null;
     }

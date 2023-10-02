@@ -18,8 +18,10 @@ public interface TableListMapper {
 
     // 获取建表语句
     @Select("show create table t_bank")
-    Map<String,String> createTable();
+    Map<String,String> showCreateTable();
 
-    @Update("#{sql}")
-    void create(String sql);
+
+    // 执行创表语句
+    @Update("${sql}")
+    void createTable(@Param("sql") String sql);
 }
