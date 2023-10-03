@@ -1,5 +1,6 @@
 package self.xf.excelprocess.util;
 
+import cn.hutool.extra.pinyin.PinyinUtil;
 import cn.hutool.poi.excel.cell.CellUtil;
 import org.apache.poi.hssf.usermodel.HSSFDateUtil;
 import org.apache.poi.ss.usermodel.*;
@@ -9,7 +10,6 @@ import org.springframework.web.multipart.MultipartFile;
 import self.xf.excelprocess.base.ExcelFormat;
 
 import java.io.ByteArrayInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.ParseException;
@@ -26,18 +26,13 @@ public class FileToMySql {
 
         createNewSheet(file);
         Map<String, Object> map = GlobalSession.get();
-        map.put("fileName", file.getOriginalFilename());
-
-//        Sheet sheet = map.get("sheet") == null ? null : (Sheet) map.get("sheet");
-//        String fileName = map.get("fileName") == null ? null : (String) map.get("fileName");
-//        Row headRow = sheet.getRow(0);
+        String fileName = FileProcess.getTableName(Objects.requireNonNull(file.getOriginalFilename()));
+        map.put("fileName", fileName);
 
         ArrayList<Object> result = new ArrayList<>();
 
-        base.getTablename(map);
-
-        // 判断temp是否在list中
-
+        // 创建数据库表
+        base.generateDataBase(map);
         return result;
     }
 
@@ -59,6 +54,7 @@ public class FileToMySql {
 
         int readRow = 0;
         int currentConsolidation = 0;
+
 
         for (Row eachRow : sheetFirst) {
             Row newRow = resultSheet.createRow(readRow++);
@@ -161,7 +157,10 @@ public class FileToMySql {
             }
             String cellValue = cell.getStringCellValue();
             ExcelFormat excelFormat = new ExcelFormat();
+            // 中文提取首字母拼音
+            cellValue = chineseToPinyin(cellValue);
             excelFormat.setName(cellValue);
+
             result.add(excelFormat);
         }
         return result;
@@ -177,29 +176,41 @@ public class FileToMySql {
                     Object num_type = checkNumDataType(cell);
                     if (Date.class.equals(num_type)) {
                         excelFormat.setType("Date");
+                        excelFormat.setValue(cell.getDateCellValue());
                     } else if (Integer.class.equals(num_type)) {
                         excelFormat.setType("Integer");
+                        excelFormat.setValue(Integer.parseInt(cell.getStringCellValue()));
                     } else if (Double.class.equals(num_type)) {
                         excelFormat.setType("Double");
+                        excelFormat.setValue(cell.getNumericCellValue());
                     } else {
                         excelFormat.setType("String");
+                        String cellValue = cell.getStringCellValue();
+                        cellValue = chineseToPinyin(cellValue);
+                        excelFormat.setValue(cellValue);
                     }
                     break;
                 case STRING:
                     Object str_type = checkStringDataType(cell);
                     if (Integer.class.equals(str_type)) {
                         excelFormat.setType("Integer");
+                        excelFormat.setValue(Integer.parseInt(cell.getStringCellValue()));
                     } else if (Double.class.equals(str_type)) {
                         excelFormat.setType("Double");
+                        excelFormat.setValue(cell.getNumericCellValue());
                     } else {
                         excelFormat.setType("String");
-                    }
+                        String cellValue = cell.getStringCellValue();
+                        cellValue = chineseToPinyin(cellValue);
+                        excelFormat.setValue(cellValue);                    }
                     break;
                 case BOOLEAN:
                     excelFormat.setType("boolean");
+                    excelFormat.setValue(cell.getBooleanCellValue());
                     break;
                 default:
                     excelFormat.setType("undefined");
+                    excelFormat.setValue("");
             }
         }
         return excelFormats;
@@ -251,6 +262,15 @@ public class FileToMySql {
         }
         return (T) String.class;
 
+    }
+
+    public static String chineseToPinyin(String cellValue) {
+        if (cellValue.matches("[\\u4e00-\\u9fa5]+")) {
+            String pinyin = PinyinUtil.getPinyin(cellValue);
+            pinyin = pinyin.replaceAll(" ", "");
+            return pinyin;
+        }
+        return cellValue;
     }
 
 

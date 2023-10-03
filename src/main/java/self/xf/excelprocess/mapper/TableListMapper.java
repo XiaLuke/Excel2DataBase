@@ -24,4 +24,6 @@ public interface TableListMapper {
     // 执行创表语句
     @Update("${sql}")
     void createTable(@Param("sql") String sql);
+
+
 }

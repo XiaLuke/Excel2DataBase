@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.RestController;
 import self.xf.excelprocess.base.TemplateEntity;
 import self.xf.excelprocess.inter.FilterIntroduction;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -18,7 +20,7 @@ import java.util.Map;
 @RequestMapping("/exportExcel")
 public class ExcelTemplate {
     @GetMapping("/export")
-    public void export() {
+    public void export(HttpServletRequest request, HttpServletResponse response) {
         // 创建工作簿
         Workbook workbook = new XSSFWorkbook();
 
@@ -97,7 +99,8 @@ public class ExcelTemplate {
             System.out.println(k + " " + v);
         });
 
-
+        response.setContentType("application/octet-stream");
+        response.setHeader("Content-Disposition", "attachment; filename=example1.xlsx");
         // 写入数据到文件
         try (FileOutputStream outputStream = new FileOutputStream("example1.xlsx")) {
             workbook.write(outputStream);

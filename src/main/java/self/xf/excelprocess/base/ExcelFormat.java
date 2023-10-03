@@ -6,4 +6,5 @@ import lombok.Data;
 public class ExcelFormat {
     private String name;
     private Object type;
+    private Object value;
 }
