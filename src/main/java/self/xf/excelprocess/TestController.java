@@ -29,6 +29,8 @@ public class TestController {
     ExcelProcess excelProcess;
     @Autowired
     FileToMySql fileToMySql;
+    @Autowired
+    DoubleSheet doubleSheet;
 
     @Autowired
     TestMapper testMapper;
@@ -58,5 +60,10 @@ public class TestController {
     @PostMapping("/importExcel")
     public void importExcel(@RequestParam("file") MultipartFile file) throws Exception {
         ArrayList<Object> sheetToJava = fileToMySql.fileProcess(file);
+    }
+
+    @PostMapping("/testImport")
+    public void testImport(@RequestParam("file") MultipartFile file) throws Exception {
+        doubleSheet.createNewSheet(file);
     }
 }
