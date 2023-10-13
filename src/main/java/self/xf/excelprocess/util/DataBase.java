@@ -2,13 +2,16 @@ package self.xf.excelprocess.util;
 
 
 import cn.hutool.extra.pinyin.PinyinUtil;
+import org.apache.tomcat.jni.Global;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import self.xf.excelprocess.base.ExcelFormat;
 import self.xf.excelprocess.mapper.TableListMapper;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Component
 public class DataBase {
@@ -20,17 +23,15 @@ public class DataBase {
         return tableListMapper.tableList();
     }
 
-    public void generateDataBase(Map<String, Object> map) {
-        String fileName = map.get("fileName").toString();
-        List<ExcelFormat> list = (List<ExcelFormat>) map.get("sql");
-        boolean isInDataBase = FileProcess.hasInDataBase(tableListMapper, fileName);
-        if (isInDataBase) {
-            appendFieldToDataBase(list, fileName);
-        } else {
-            createTableToDataBase(list, fileName);
-        }
+    public void generateDataBase() {
+        List<Map<String, Object>> mapList = GlobalSession.getObjectMapList();
+        mapList.forEach(item->{
+            Set<String> strings = item.keySet();
+            List<String> list = new ArrayList<>(strings);
+            String s = list.get(0);
+            Map<String,Object> map = (Map<String,Object>)item.get(s);
 
-        insertDataToDataBase(list, fileName);
+        });
     }
 
     private void insertDataToDataBase(List<ExcelFormat> list, String fileName) {

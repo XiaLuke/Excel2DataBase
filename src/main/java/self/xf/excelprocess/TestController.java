@@ -12,7 +12,7 @@ import self.xf.excelprocess.hnps.mapper.ZmqdMapper;
 import self.xf.excelprocess.mapper.TestMapper;
 import self.xf.excelprocess.test.Test11;
 import self.xf.excelprocess.util.ExcelProcess;
-import self.xf.excelprocess.util.FileToMySql;
+import self.xf.excelprocess.util.FileToObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +28,7 @@ public class TestController {
     @Autowired
     ExcelProcess excelProcess;
     @Autowired
-    FileToMySql fileToMySql;
+    FileToObject fileToObject;
     @Autowired
     DoubleSheet doubleSheet;
 
@@ -59,7 +59,7 @@ public class TestController {
 
     @PostMapping("/importExcel")
     public void importExcel(@RequestParam("file") MultipartFile file) throws Exception {
-        ArrayList<Object> sheetToJava = fileToMySql.fileProcess(file);
+        ArrayList<Object> sheetToJava = fileToObject.fileProcess(file);
     }
 
     @PostMapping("/testImport")

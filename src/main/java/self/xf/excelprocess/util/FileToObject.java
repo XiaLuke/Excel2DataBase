@@ -1,8 +1,7 @@
 package self.xf.excelprocess.util;
 
 import cn.hutool.extra.pinyin.PinyinUtil;
-import cn.hutool.poi.excel.cell.CellUtil;
-import org.apache.poi.hssf.usermodel.HSSFDateUtil;
+import net.sourceforge.pinyin4j.PinyinHelper;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -10,125 +9,129 @@ import org.springframework.web.multipart.MultipartFile;
 import self.xf.excelprocess.base.ExcelFormat;
 
 import java.io.ByteArrayInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
-public class FileToMySql {
+public class FileToObject {
 
     @Autowired
     DataBase base;
 
     public ArrayList<Object> fileProcess(MultipartFile file) {
 
-        createNewSheet(file);
-        Map<String, Object> map = GlobalSession.get();
-        String fileName = FileProcess.getTableName(Objects.requireNonNull(file.getOriginalFilename()));
-        map.put("fileName", fileName);
-
-        ArrayList<Object> result = new ArrayList<>();
+        sheetToList(file);
 
         // 创建数据库表
-        base.generateDataBase(map);
-        return result;
+        base.generateDataBase();
+        return null;
     }
 
-    public void createNewSheet(MultipartFile file) {
+    public void sheetToList(MultipartFile file) {
         createFileStream(file);
 
-        Map<String, Object> map = GlobalSession.get();
-        Workbook workbook = (Workbook) map.get("workbook");
+        Map<String, Object> globalMap =  GlobalSession.getObjectMap();
+        Workbook workbook = (Workbook) globalMap.get("workbook");
 
         // create a new workbook
-        Sheet sheetFirst = workbook.getSheetAt(0);
-        // 拿到第一行每个单元格内容作为list中每个对象的name
-        List<ExcelFormat> excelFormats = getFirstRowName(sheetFirst);
+        int sheets = workbook.getNumberOfSheets();
+        for (int sheetIndex = 0; sheetIndex < sheets; sheetIndex++) {
+            Sheet eachSheet = workbook.getSheetAt(sheetIndex);
+            String sheetName = eachSheet.getSheetName();
 
-        // create a new sheet prepare for subsequent use
-        Sheet resultSheet = workbook.createSheet("result");
+            List<Map<String, Object>> list = new ArrayList<>();
 
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-
-        int readRow = 0;
-        int currentConsolidation = 0;
-
-
-        for (Row eachRow : sheetFirst) {
-            Row newRow = resultSheet.createRow(readRow++);
-            int readCell = 0;
-            int lastCellNum = eachRow.getLastCellNum();
-
-            for (int i = 0; i < lastCellNum; i++) {
-                Cell cell = eachRow.getCell(i);
-                if (CellUtil.isMergedRegion(cell)) {
-                    splitCell(sheetFirst, currentConsolidation);
+            Row firstRow = eachSheet.getRow(0);
+            int lastRowNum = eachSheet.getLastRowNum();
+            for (int i = 1; i < lastRowNum; i++) {
+                Row eachRow = eachSheet.getRow(i);
+                if (eachRow.getCell(0) == null) {
+                    continue;
                 }
-                if (cell == null) {
-                    eachRow.createCell(i).setCellValue("undefined");
-                    cell = eachRow.getCell(i);
+                Map<String, Object> map = new HashMap<>();
+                for (int j = 0; j < firstRow.getLastCellNum(); j++) {
+                    Cell cell = eachRow.getCell(j);
+                    CellType cellType = cell.getCellType();
+                    if (cellType == CellType.NUMERIC) {
+                        double value = cell.getNumericCellValue();
+                        map.put(firstRow.getCell(j).getStringCellValue(), value);
+                    }
+                    if (cellType == CellType.STRING) {
+                        String cellValue = cell.getStringCellValue();
+                        if (cellValue != null && !cellValue.equals("")) {
+                            map.put(firstRow.getCell(j).getStringCellValue(), cellValue);
+                        }
+                    }
                 }
-
-                switch (cell.getCellType()) {
-                    case NUMERIC:
-                        double numericCellValue = cell.getNumericCellValue();
-                        String value;
-                        if (HSSFDateUtil.isCellDateFormatted(cell)) {
-                            Date date = HSSFDateUtil.getJavaDate(Double.parseDouble(String.valueOf(numericCellValue)));
-                            value = dateFormat.format(date);
-                            newRow.createCell(readCell++).setCellValue(value);
-                        } else {
-                            double dValue = cell.getNumericCellValue();
-                            String s = String.valueOf(dValue);
-
-                            newRow.createCell(readCell++).setCellValue(s);
-                        }
-                        break;
-                    case STRING:
-                        if (!checkIfNotation(cell)) {
-                            newRow.createCell(readCell++).setCellValue(cell.getStringCellValue());
-                        }
-                        break;
-                    case BOOLEAN:
-                        newRow.createCell(readCell++).setCellValue(cell.getBooleanCellValue());
-                        break;
-                    case FORMULA:
-                        newRow.createCell(readCell++).setCellValue(cell.getCellFormula());
-                        break;
-                    case ERROR:
-                        newRow.createCell(readCell++).setCellValue("ERROR");
-                        break;
-                    default:
-                        newRow.createCell(readCell++).setCellValue("");
+                if (map.size() > 0) {
+                    list.add(map);
                 }
             }
+            if (GlobalSession.getObjectMapList() == null) {
+                globalMap.put("list",new ArrayList<>());
+            }
+
+//            Map<String,Object> objectMap = new HashMap<>();
+//            objectMap.put(sheetName,list);
+//
+//            List<Map<String, Object>> objectMapList = GlobalSession.getObjectMapList();
+//            objectMapList.add(objectMap);
+
+            reverseNumericToDate(list,sheetName);
         }
-        try {
-            FileOutputStream fileOut = new FileOutputStream("processFile.xlsx");
-            workbook.write(fileOut);
-            fileOut.close();
-            workbook.close();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        getFirstCellValueAndType(sheetFirst.getRow(1), excelFormats);
-        map.put("sql", excelFormats);
-        map.put("sheet", resultSheet);
-        GlobalSession.set(map);
+    }
+    private void reverseNumericToDate(List<Map<String, Object>> list, String sheetName) {
+        list.stream().map(item -> {
+            item.forEach((key,value)->{
+                if (key.contains("时间") || key.contains("日期")) {
+                    Date date = numericToDate(value);
+                    item.put(key, date);
+                }
+            });
+            return item;
+        }).collect(Collectors.toList());
+
+        reverseChineseToPinyin(list,sheetName);
     }
 
-    private void splitCell(Sheet sheet, int currentConsolidation) {
-        sheet.getMergedRegion(currentConsolidation);
+    private void reverseChineseToPinyin(List<Map<String, Object>> list, String sheetName) {
+        list = list.stream().map(item -> {
+            Map<String, Object> map = new HashMap<>();
+            item.forEach((key, value) -> {
+                if (key instanceof String) {
+                    key = getUpper(key);
+                }
+                if (map.get(key) != null) {
+                    key = key + "_1";
+                }
+                map.put(key, value);
+            });
+            item = map;
+            return item;
+        }).collect(Collectors.toList());
+        List<Map<String, Object>> objectMapList = GlobalSession.getObjectMapList();
+        Map<String,Object> objectMap = new HashMap<>();
+//        sheetName = getUpper(sheetName);
+        objectMap.put(sheetName,list);
+        objectMapList.add(objectMap);
     }
 
-    private boolean checkIfNotation(Cell cell) {
-        String str = cell.getStringCellValue();
-        if (str.startsWith("!注意:")) {
-            return true;
+    private Date numericToDate(Object obj) {
+        double value = Double.parseDouble(obj.toString());
+        if (value > 25569 && value < 290000000) {
+            Date javaDate = DateUtil.getJavaDate(value);
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            String formattedDate = dateFormat.format(javaDate);
+            try {
+                return dateFormat.parse(formattedDate);
+            } catch (ParseException e) {
+                throw new RuntimeException(e);
+            }
         }
-        return false;
+        return null;
     }
 
     public void createFileStream(MultipartFile file) {
@@ -164,6 +167,20 @@ public class FileToMySql {
             result.add(excelFormat);
         }
         return result;
+    }
+
+    private String getUpper(String value){
+        StringBuilder pinyinText = new StringBuilder();
+        if (value.matches("[\\u4e00-\\u9fa5]+")) {
+            for (char c : value.toCharArray()) {
+                String[] pinyinArray = PinyinHelper.toHanyuPinyinStringArray(c);
+                if (pinyinArray != null && pinyinArray.length > 0) {
+                    String pinyin = pinyinArray[0];
+                    pinyinText.append(Character.toUpperCase(pinyin.charAt(0)));
+                }
+            }
+        }
+        return pinyinText.toString();
     }
 
     private List<ExcelFormat> getFirstCellValueAndType(Row row, List<ExcelFormat> excelFormats) {
@@ -202,7 +219,8 @@ public class FileToMySql {
                         excelFormat.setType("String");
                         String cellValue = cell.getStringCellValue();
                         cellValue = chineseToPinyin(cellValue);
-                        excelFormat.setValue(cellValue);                    }
+                        excelFormat.setValue(cellValue);
+                    }
                     break;
                 case BOOLEAN:
                     excelFormat.setType("boolean");

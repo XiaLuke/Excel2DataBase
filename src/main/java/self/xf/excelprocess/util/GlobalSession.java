@@ -1,15 +1,16 @@
 package self.xf.excelprocess.util;
 
+import java.util.List;
 import java.util.Map;
 
 public class GlobalSession {
-    private static ThreadLocal<Map<String, Object>> threadLocal = new ThreadLocal<>();
+    private static final ThreadLocal<Object> threadLocal = new ThreadLocal<>();
 
-    public static void set(Map<String, Object> value) {
+    public static void set(Object value) {
         threadLocal.set(value);
     }
 
-    public static Map<String, Object> get() {
+    public static Object get() {
         return threadLocal.get();
     }
 
@@ -17,4 +18,12 @@ public class GlobalSession {
         threadLocal.remove();
     }
 
+    public static Map<String,Object> getObjectMap(){
+        return (Map<String, Object>) GlobalSession.get();
+    }
+
+    public static List<Map<String, Object>> getObjectMapList(){
+        Map<String, Object> objectMap = getObjectMap();
+        return (List<Map<String, Object>>) objectMap.get("list");
+    }
 }
