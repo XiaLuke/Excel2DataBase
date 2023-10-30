@@ -1,4 +1,4 @@
-package self.xf.excelprocess.mapper;
+package self.xf.excelprocess.eci.mapper;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;

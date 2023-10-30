@@ -1,4 +1,4 @@
-package self.xf.excelprocess.hnps.controller;
+package self.xf.excelprocess.eci.hnps.controller;
 
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;

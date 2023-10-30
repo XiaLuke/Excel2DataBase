@@ -1,4 +1,4 @@
-package self.xf.excelprocess.hnps.mapper;
+package self.xf.excelprocess.eci.mapper;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -6,6 +6,6 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 @Mapper
-public interface ZmqdMapper {
+public interface TestMapper {
     void save(@Param("requestList") List<Object> list);
 }

@@ -1,4 +1,4 @@
-package self.xf.excelprocess.cqsy;
+package self.xf.excelprocess.eci.cqsy;
 
 import lombok.Data;
 

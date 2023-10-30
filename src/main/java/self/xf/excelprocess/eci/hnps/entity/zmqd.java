@@ -1,4 +1,4 @@
-package self.xf.excelprocess.hnps.entity;
+package self.xf.excelprocess.eci.hnps.entity;
 
 import lombok.Data;
 import self.xf.excelprocess.inter.EntryKey;

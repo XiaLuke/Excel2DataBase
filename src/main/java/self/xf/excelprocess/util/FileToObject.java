@@ -37,15 +37,18 @@ public class FileToObject {
         Workbook workbook = (Workbook) globalMap.get("workbook");
 
         // create a new workbook
-        int sheets = workbook.getNumberOfSheets();
-        for (int sheetIndex = 0; sheetIndex < sheets; sheetIndex++) {
+        int sheetCount = workbook.getNumberOfSheets();
+        for (int sheetIndex = 0; sheetIndex < sheetCount; sheetIndex++) {
+            // 每个表
             Sheet eachSheet = workbook.getSheetAt(sheetIndex);
             String sheetName = eachSheet.getSheetName();
 
             List<Map<String, Object>> list = new ArrayList<>();
 
-            Row firstRow = eachSheet.getRow(0);
+            // 头行
+            Row firstRow = eachSheet.getRow(eachSheet.getFirstRowNum());
             int lastRowNum = eachSheet.getLastRowNum();
+
             for (int i = 1; i < lastRowNum; i++) {
                 Row eachRow = eachSheet.getRow(i);
                 if (eachRow.getCell(0) == null) {
@@ -73,13 +76,6 @@ public class FileToObject {
             if (GlobalSession.getObjectMapList() == null) {
                 globalMap.put("list",new ArrayList<>());
             }
-
-//            Map<String,Object> objectMap = new HashMap<>();
-//            objectMap.put(sheetName,list);
-//
-//            List<Map<String, Object>> objectMapList = GlobalSession.getObjectMapList();
-//            objectMapList.add(objectMap);
-
             reverseNumericToDate(list,sheetName);
         }
     }

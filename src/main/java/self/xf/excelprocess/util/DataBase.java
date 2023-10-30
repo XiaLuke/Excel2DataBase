@@ -2,11 +2,10 @@ package self.xf.excelprocess.util;
 
 
 import cn.hutool.extra.pinyin.PinyinUtil;
-import org.apache.tomcat.jni.Global;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import self.xf.excelprocess.base.ExcelFormat;
-import self.xf.excelprocess.mapper.TableListMapper;
+import self.xf.excelprocess.eci.mapper.TableListMapper;
 
 import java.util.ArrayList;
 import java.util.List;
