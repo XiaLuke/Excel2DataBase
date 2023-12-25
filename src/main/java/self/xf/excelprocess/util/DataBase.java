@@ -5,7 +5,6 @@ import cn.hutool.extra.pinyin.PinyinUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import self.xf.excelprocess.base.ExcelFormat;
-import self.xf.excelprocess.eci.mapper.TableListMapper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,13 +13,6 @@ import java.util.Set;
 
 @Component
 public class DataBase {
-    @Autowired
-    private TableListMapper tableListMapper;
-
-    public List<String> tableList() {
-        // 获取当前配置文件中数据连接获取当前数据的表名
-        return tableListMapper.tableList();
-    }
 
     public void generateDataBase() {
         List<Map<String, Object>> mapList = GlobalSession.getObjectMapList();
@@ -31,55 +23,6 @@ public class DataBase {
             Map<String,Object> map = (Map<String,Object>)item.get(s);
 
         });
-    }
-
-    private void insertDataToDataBase(List<ExcelFormat> list, String fileName) {
-        for (ExcelFormat item : list) {
-            String name = item.getName();
-            Object value = item.getValue();
-            String sql = "insert into " + fileName + "(" + name + ") values(\"" + value + "\")";
-            tableListMapper.createTable(sql);
-        }
-    }
-
-    private void appendFieldToDataBase(List<ExcelFormat> list, String fileName) {
-        // 1. 查询当前表中存在的字段
-        List<String> columnList = tableListMapper.columnList(fileName);
-        // 2. 将list中的字段名和数据库中的字段名进行比较，如果数据库中没有，那么就添加
-        for (ExcelFormat excelFormat : list) {
-            String name = excelFormat.getName();
-            if (!columnList.contains(name)) {
-                // 3. 如果数据库中没有，那么就添加
-                String sql = "alter table " + fileName + " add " + name + " " + getType(excelFormat.getType());
-                tableListMapper.createTable(sql);
-            }
-        }
-    }
-
-    private void createTableToDataBase(List<ExcelFormat> list, String tableName) {
-        // list中包含字段名，字段类型
-        if (tableName.endsWith(".xlsx")) {
-            tableName = tableName.substring(0, tableName.length() - 5);
-        }
-        if (tableName.endsWith(".xls")) {
-            tableName = tableName.substring(0, tableName.length() - 4);
-        }
-        // 如果tableName中包含中文，那么就转换为拼音
-        boolean isChinese = false;
-        for (int i = 0; i < tableName.length(); i++) {
-            char c = tableName.charAt(i);
-            if (c >= 0x4E00 && c <= 0x9FA5) {
-                isChinese = true;
-                break;
-            }
-        }
-        if (isChinese) {
-            tableName = PinyinUtil.getPinyin(tableName, "");
-        }
-
-        String sql = createTableToDataBase(tableName, list);
-        // TODO: resolve SQL Execution Exceptions
-        tableListMapper.createTable(sql);
     }
 
     private <T> T getType(Object type) {
