@@ -2,14 +2,17 @@ package self.xf.excelprocess.util;
 
 import cn.hutool.extra.pinyin.PinyinUtil;
 import net.sourceforge.pinyin4j.PinyinHelper;
+import org.apache.commons.compress.utils.IOUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 import self.xf.excelprocess.base.ExcelFormat;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.*;
+import java.net.URLEncoder;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -21,19 +24,131 @@ public class FileToObject {
     @Autowired
     DataBase base;
 
-    public ArrayList<Object> fileProcess(MultipartFile file) {
+    public ArrayList<Object> getSqlWithExcel(HttpServletRequest request, HttpServletResponse response) throws Exception{
+        fileToList();
 
-        sheetToList(file);
-
+        // 创建文件后，将内容写入，并下载该文件
+        File logFile = new File("E:\\File\\Study\\JetBrains\\IdeaProject\\ExcelProcess\\text.sql");
+        InputStream in = new FileInputStream(logFile);
+        String filenamedisplay = URLEncoder.encode("text.sql", "UTF-8");
+        response.setContentType("text/html;charset=utf-8");
+        request.setCharacterEncoding("UTF-8");
+        response.setHeader("Content-Disposition", "attachment; filename=" + filenamedisplay);
+        response.setContentType("application/x-download;charset=utf-8");
+        OutputStream out = response.getOutputStream();
+        IOUtils.copy(in, out);
+        out.flush();
+        in.close();
         // 创建数据库表
-        base.generateDataBase();
+//        base.generateDataBase();
         return null;
+    }
+
+
+    /**
+     * 删表插入数据
+     * @return {@link ArrayList}<{@link Object}>
+     */
+    public ArrayList<Object> forceInsertTable() {
+        fileToList();
+        return null;
+    }
+
+    public void fileToList(){
+        StaticMethod.init();
+        // {表:{行：{列：值}}
+        Map<String, Object> mapList = GlobalSession.getListMap();
+
+        List<Map<String, Object>> tableMap;
+        if (mapList.size() < 1) {
+            throw new RuntimeException("请先上传文件");
+        } else if (mapList.size() == 1) {
+            String tableName = mapList.keySet().iterator().next();
+            tableMap = (List<Map<String, Object>>)mapList.get(tableName);
+            String insertSql = generateInsertSql(tableMap, tableName); // 生成 insert 数据
+
+            // 保存到文件中
+            FileWriter writer = null;
+            String path = "E:\\File\\Study\\JetBrains\\IdeaProject\\ExcelProcess\\text.sql";
+            try {
+                // true表示不覆盖原来的内容，而是加到文件的后面。若要覆盖原来的内容，直接省略这个参数就好
+                writer = new FileWriter(path, true);
+                writer.write(insertSql);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            } finally {
+                try {
+                    writer.flush();
+                    writer.close();
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        } else {
+            Set<String> set = mapList.keySet();
+            // 将set转为list
+            List<String> list = new ArrayList<>(set);
+            for (String tableName : list) {
+                tableMap = (List<Map<String, Object>>) mapList.get(tableName);
+                String insertSql = generateInsertSql(tableMap, tableName); // 生成 insert 数据
+
+                // 保存到文件中
+                FileWriter writer = null;
+                String path = "E:\\File\\Study\\JetBrains\\IdeaProject\\ExcelProcess\\text.sql";
+                try {
+                    // true表示不覆盖原来的内容，而是加到文件的后面。若要覆盖原来的内容，直接省略这个参数就好
+                    writer = new FileWriter(path, true);
+                    writer.write(insertSql);
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                } finally {
+                    try {
+                        writer.flush();
+                        writer.close();
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * 生成插入语句
+     *
+     * @param tableMap
+     * @param tableName
+     */
+    public String generateInsertSql(List<Map<String, Object>> tableMap, String tableName) {
+        StringBuilder sb = new StringBuilder();
+        for (Map<String, Object> lineMap : tableMap) {
+            String sql = "INSERT INTO " + tableName + " (";
+            Set<String> strings1 = lineMap.keySet();
+            List<String> list1 = new ArrayList<>(strings1);
+            for (String s : list1) {
+                sql += s + ",";
+            }
+            sql = sql.substring(0, sql.length() - 1);
+            sql += ") VALUES (";
+            for (String s : list1) {
+                Object o = lineMap.get(s);
+                if (o instanceof String) {
+                    sql += "'" + o + "',";
+                } else {
+                    sql += o + ",";
+                }
+            }
+            sql = sql.substring(0, sql.length() - 1);
+            sql += ");\n";
+            sb.append(sql);
+        }
+        return sb.toString();
     }
 
     public void sheetToList(MultipartFile file) {
         createFileStream(file);
 
-        Map<String, Object> globalMap =  GlobalSession.getObjectMap();
+        Map<String, Object> globalMap = GlobalSession.getFileContentMap();
         Workbook workbook = (Workbook) globalMap.get("workbook");
 
         // create a new workbook
@@ -73,15 +188,16 @@ public class FileToObject {
                     list.add(map);
                 }
             }
-            if (GlobalSession.getObjectMapList() == null) {
-                globalMap.put("list",new ArrayList<>());
+            if (GlobalSession.getListMap() == null) {
+                globalMap.put("list", new ArrayList<>());
             }
-            reverseNumericToDate(list,sheetName);
+            reverseNumericToDate(list, sheetName);
         }
     }
+
     private void reverseNumericToDate(List<Map<String, Object>> list, String sheetName) {
         list.stream().map(item -> {
-            item.forEach((key,value)->{
+            item.forEach((key, value) -> {
                 if (key.contains("时间") || key.contains("日期")) {
                     Date date = numericToDate(value);
                     item.put(key, date);
@@ -90,7 +206,7 @@ public class FileToObject {
             return item;
         }).collect(Collectors.toList());
 
-        reverseChineseToPinyin(list,sheetName);
+        reverseChineseToPinyin(list, sheetName);
     }
 
     private void reverseChineseToPinyin(List<Map<String, Object>> list, String sheetName) {
@@ -108,11 +224,10 @@ public class FileToObject {
             item = map;
             return item;
         }).collect(Collectors.toList());
-        List<Map<String, Object>> objectMapList = GlobalSession.getObjectMapList();
-        Map<String,Object> objectMap = new HashMap<>();
+        Map<String, Object> objectMapList = GlobalSession.getListMap();
+        Map<String, Object> objectMap = new HashMap<>();
 //        sheetName = getUpper(sheetName);
-        objectMap.put(sheetName,list);
-        objectMapList.add(objectMap);
+        objectMap.put(sheetName, list);
     }
 
     private Date numericToDate(Object obj) {
@@ -143,7 +258,7 @@ public class FileToObject {
         }
         Map<String, Object> map = new HashMap<>();
         map.put("workbook", workbook);
-        GlobalSession.set(map);
+        GlobalSession.setFileContentMap(map);
     }
 
     private List<ExcelFormat> getFirstRowName(Sheet headSheet) {
@@ -165,7 +280,7 @@ public class FileToObject {
         return result;
     }
 
-    private String getUpper(String value){
+    private String getUpper(String value) {
         StringBuilder pinyinText = new StringBuilder();
         if (value.matches("[\\u4e00-\\u9fa5]+")) {
             for (char c : value.toCharArray()) {
@@ -175,8 +290,10 @@ public class FileToObject {
                     pinyinText.append(Character.toUpperCase(pinyin.charAt(0)));
                 }
             }
+            return pinyinText.toString();
+        } else {
+            return value;
         }
-        return pinyinText.toString();
     }
 
     private List<ExcelFormat> getFirstCellValueAndType(Row row, List<ExcelFormat> excelFormats) {
@@ -287,9 +404,7 @@ public class FileToObject {
         return cellValue;
     }
 
-
-    public static void main(String[] args) {
+    public ArrayList<Object> genearateSql(MultipartFile file) {
+        return null;
     }
-
-
 }

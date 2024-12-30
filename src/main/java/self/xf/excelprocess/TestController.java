@@ -6,47 +6,22 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import self.xf.excelprocess.eci.mapper.HeadMapper;
-import self.xf.excelprocess.eci.mapper.ListMapper;
-import self.xf.excelprocess.eci.hnps.mapper.ZmqdMapper;
-import self.xf.excelprocess.eci.mapper.TestMapper;
 import self.xf.excelprocess.test.Test11;
 import self.xf.excelprocess.util.ExcelProcess;
 import self.xf.excelprocess.util.FileToObject;
+import self.xf.excelprocess.util.GlobalSession;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
-import java.util.List;
 
-// TODO：可删
 @RestController
 public class TestController {
-    @Autowired
-    ListMapper listMapper;
-    @Autowired
-    HeadMapper headMapper;
-    @Autowired
-    ZmqdMapper zmqdMapper;
     @Autowired
     ExcelProcess excelProcess;
     @Autowired
     FileToObject fileToObject;
 
-    @Autowired
-    TestMapper testMapper;
-
-    @RequestMapping("qwe")
-    public void test11() throws Exception {
-        List<Object> objects = ExcelToJava.get();
-        System.out.println(objects);
-        zmqdMapper.save(objects);
-    }
-
-    @RequestMapping("hnzfHead")
-    public void test22() throws Exception {
-        List<Object> objects = ExcelToJava.get();
-        System.out.println(objects);
-        headMapper.save(objects);
-    }
 
     @RequestMapping("/test")
     public void test11111() throws Exception {
@@ -56,9 +31,27 @@ public class TestController {
 //        testMapper.save(sheetToJava);
     }
 
-    @PostMapping("/importExcel")
-    public void importExcel(@RequestParam("file") MultipartFile file) throws Exception {
-        ArrayList<Object> sheetToJava = fileToObject.fileProcess(file);
+    @PostMapping("/getSqlWithExcel")
+    public void getSqlWithExcel(@RequestParam("file") MultipartFile file, HttpServletRequest request, HttpServletResponse response) throws Exception {
+        GlobalSession.setFile(file);
+        ArrayList<Object> sheetToJava = fileToObject.getSqlWithExcel(request,response);
+    }
+
+    @PostMapping("/forceInsertTable")
+    public void forceInsertTable(@RequestParam("file") MultipartFile file) throws Exception {
+        GlobalSession.setFile(file);
+        ArrayList<Object> sheetToJava = fileToObject.forceInsertTable();
+    }
+
+    @PostMapping("/softInsertTable")
+    public void softInsertTable(@RequestParam("file") MultipartFile file) throws Exception {
+//        ArrayList<Object> sheetToJava = fileToObject.softInsertTable(file);
+    }
+
+    @PostMapping("/genearateSql")
+    public void genearateSql(@RequestParam("file") MultipartFile file) {
+        GlobalSession.setFile(file);
+        ArrayList<Object> sheetToJava = fileToObject.genearateSql(file);
     }
 
 }

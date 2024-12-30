@@ -23,12 +23,11 @@ public class DataBase {
     }
 
     public void generateDataBase() {
-        List<Map<String, Object>> mapList = GlobalSession.getObjectMapList();
-        mapList.forEach(item->{
-            Set<String> strings = item.keySet();
-            List<String> list = new ArrayList<>(strings);
-            String s = list.get(0);
-            Map<String,Object> map = (Map<String,Object>)item.get(s);
+        Map<String, Object> mapList = GlobalSession.getListMap();
+        Set<String> set = mapList.keySet();
+        List<String> list = new ArrayList<>(set);
+        list.forEach(item->{
+            Map<String,Object> map = (Map<String,Object>)mapList.get(item);
 
         });
     }
