@@ -24,7 +24,7 @@ public class FileToObject {
     @Autowired
     DataBase base;
 
-    public ArrayList<Object> fileProcess(HttpServletRequest request, HttpServletResponse response) throws Exception{
+    public ArrayList<Object> getSqlWithExcel(HttpServletRequest request, HttpServletResponse response) throws Exception{
         fileToList();
         //fileName为传入的要下载的文件的文件名，本示例下载的是日志文件所以后缀是.log
 //        fileName = URLDecoder.decode(fileName, "UTF-8");
@@ -57,9 +57,9 @@ public class FileToObject {
     }
 
     public void fileToList(){
-        new StaticMethod();
+        StaticMethod.init();
         // {表:{行：{列：值}}
-        List<Map<String, Object>> mapList = GlobalSession.getObjectMapList();
+        List<Map<String, Object>> mapList = GlobalSession.getListMap();
 
         List<Map<String, Object>> tableMap;
         if (mapList.size() < 1) {
@@ -67,9 +67,10 @@ public class FileToObject {
         } else if (mapList.size() == 1) {
             String tableName = mapList.get(0).keySet().iterator().next();
             tableMap = (List<Map<String, Object>>)mapList.get(0).get(tableName);
-            resolveListTable(tableMap, tableName);
-            // 从GLobalSession中获取StringBuilder保存到文件中
-            StringBuilder stringBuilder = GlobalSession.getStringBuilder();
+            generateInsertSql(tableMap, tableName); // 生成 insert 数据
+
+            // 从GlobalSession中获取StringBuilder保存到文件中
+            StringBuilder stringBuilder = GlobalSession.getInsertSql();
             // 保存到文件中
             FileWriter writer = null;
             String path = "E:\\File\\JavaProject\\XF\\Excel2DataBase\\src\\main\\resources\\text.sql";
@@ -93,22 +94,28 @@ public class FileToObject {
                 List<String> list = new ArrayList<>(strings);
                 String tableName = list.get(0);
                 tableMap = (List<Map<String, Object>>) map.get(tableName);
-                resolveListTable(tableMap, tableName);
+                generateInsertSql(tableMap, tableName);
             }
         }
     }
 
-    public void resolveListTable(List<Map<String, Object>> tableMap, String tableName) {
+    /**
+     * 生成插入语句
+     *
+     * @param tableMap
+     * @param tableName
+     */
+    public void generateInsertSql(List<Map<String, Object>> tableMap, String tableName) {
         StringBuilder sb = new StringBuilder();
         for (Map<String, Object> lineMap : tableMap) {
-            String sql = "insert into " + tableName + " (";
+            String sql = "INSERT INTO " + tableName + " (";
             Set<String> strings1 = lineMap.keySet();
             List<String> list1 = new ArrayList<>(strings1);
             for (String s : list1) {
                 sql += s + ",";
             }
             sql = sql.substring(0, sql.length() - 1);
-            sql += ") values (";
+            sql += ") VALUES (";
             for (String s : list1) {
                 Object o = lineMap.get(s);
                 if (o instanceof String) {
@@ -121,13 +128,13 @@ public class FileToObject {
             sql += ");\n";
             sb.append(sql);
         }
-        GlobalSession.set(sb);
+        GlobalSession.setInsertSql(sb);
     }
 
     public void sheetToList(MultipartFile file) {
         createFileStream(file);
 
-        Map<String, Object> globalMap = GlobalSession.getObjectMap();
+        Map<String, Object> globalMap = GlobalSession.getFileContentMap();
         Workbook workbook = (Workbook) globalMap.get("workbook");
 
         // create a new workbook
@@ -238,7 +245,7 @@ public class FileToObject {
         }
         Map<String, Object> map = new HashMap<>();
         map.put("workbook", workbook);
-        GlobalSession.set(map);
+        GlobalSession.setFile(map);
     }
 
     private List<ExcelFormat> getFirstRowName(Sheet headSheet) {

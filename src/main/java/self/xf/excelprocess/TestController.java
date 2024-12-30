@@ -31,15 +31,15 @@ public class TestController {
 //        testMapper.save(sheetToJava);
     }
 
-    @PostMapping("/importExcel")
-    public void importExcel(@RequestParam("file") MultipartFile file, HttpServletRequest request, HttpServletResponse response) throws Exception {
-        GlobalSession.set(file);
-        ArrayList<Object> sheetToJava = fileToObject.fileProcess(request,response);
+    @PostMapping("/getSqlWithExcel")
+    public void getSqlWithExcel(@RequestParam("file") MultipartFile file, HttpServletRequest request, HttpServletResponse response) throws Exception {
+        GlobalSession.setFile(file);
+        ArrayList<Object> sheetToJava = fileToObject.getSqlWithExcel(request,response);
     }
 
     @PostMapping("/forceInsertTable")
     public void forceInsertTable(@RequestParam("file") MultipartFile file) throws Exception {
-        GlobalSession.set(file);
+        GlobalSession.setFile(file);
         ArrayList<Object> sheetToJava = fileToObject.forceInsertTable();
     }
 
@@ -50,8 +50,8 @@ public class TestController {
 
     @PostMapping("/genearateSql")
     public void genearateSql(@RequestParam("file") MultipartFile file) {
-        GlobalSession.set(file);
-//        ArrayList<Object> sheetToJava = fileToObject.genearateSql(file);
+        GlobalSession.setFile(file);
+        ArrayList<Object> sheetToJava = fileToObject.genearateSql(file);
     }
 
 }

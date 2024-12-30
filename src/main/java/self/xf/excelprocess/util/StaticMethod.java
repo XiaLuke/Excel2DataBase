@@ -12,34 +12,35 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class StaticMethod {
-    static  {
-        MultipartFile file = GlobalSession.getFile();
-        createFileStream(file);
+    public static void init() {
+        // 根据全局文件创建工作流（Workbook）并保存到全局
+        createFileStream();
 
-        Map<String, Object> globalMap = GlobalSession.getObjectMap();
+        Map<String, Object> globalMap = GlobalSession.getFileContentMap();
         Workbook workbook = (Workbook) globalMap.get("workbook");
 
-        // create a new workbook
-        int sheetCount = workbook.getNumberOfSheets();
-        for (int sheetIndex = 0; sheetIndex < sheetCount; sheetIndex++) {
-            // 每个表
+        // 一个 sheet 为一个表
+        for (int sheetIndex = 0; sheetIndex < workbook.getNumberOfSheets(); sheetIndex++) {
             Sheet eachSheet = workbook.getSheetAt(sheetIndex);
             String sheetName = eachSheet.getSheetName();
 
             List<Map<String, Object>> list = new ArrayList<>();
 
-            // 头行
+            // 获取首行和尾行
             Row firstRow = eachSheet.getRow(eachSheet.getFirstRowNum());
             int lastRowNum = eachSheet.getLastRowNum();
 
             for (int i = 1; i < lastRowNum; i++) {
+                // 获取每行内容，若第一个单元格为空，跳过改行
                 Row eachRow = eachSheet.getRow(i);
                 if (eachRow.getCell(0) == null) {
                     continue;
                 }
+
                 Map<String, Object> map = new HashMap<>();
+                // 遍历首行的所有列信息
                 for (int j = 0; j < firstRow.getLastCellNum(); j++) {
-                    Cell cell = eachRow.getCell(j);
+                    Cell cell = eachRow.getCell(j); // 当前行各个列对应单元格
                     CellType cellType = cell.getCellType();
                     if (cellType == CellType.NUMERIC) {
                         double value = cell.getNumericCellValue();
@@ -56,13 +57,19 @@ public class StaticMethod {
                     list.add(map);
                 }
             }
-            if (GlobalSession.getObjectMapList() == null) {
+            if (GlobalSession.getFileContentMap() == null) {
                 globalMap.put("list", new ArrayList<>());
             }
             reverseNumericToDate(list, sheetName);
         }
     }
 
+    /**
+     * 遍历从文件中解析后得到的list<Map> 内容，若key中包含 “时间”或“日期”内容，解析当前value
+     *
+     * @param list
+     * @param sheetName
+     */
     private static void reverseNumericToDate(List<Map<String, Object>> list, String sheetName) {
         list.stream().map(item -> {
             item.forEach((key, value) -> {
@@ -84,21 +91,32 @@ public class StaticMethod {
                 if (key instanceof String) {
                     key = getUpper(key);
                 }
-                if (map.get(key) != null) {
-                    key = key + "_1";
+                String originalKey = key;
+                int counter = 1;
+                while (map.containsKey(key)) {
+                    key = originalKey + "_" + counter;
+                    counter++;
                 }
                 map.put(key, value);
             });
             item = map;
             return item;
         }).collect(Collectors.toList());
-        List<Map<String, Object>> objectMapList = GlobalSession.getObjectMapList();
+
+        // { 表名：{行：{列：值}}}
+        List<Map<String, Object>> objectMapList = GlobalSession.getListMap();
         Map<String, Object> objectMap = new HashMap<>();
 //        sheetName = getUpper(sheetName);
         objectMap.put(sheetName, list);
         objectMapList.add(objectMap);
     }
 
+    /**
+     * 数字内容转日期格式
+     *
+     * @param obj
+     * @return {@link Date}
+     */
     private static Date numericToDate(Object obj) {
         double value = Double.parseDouble(obj.toString());
         if (value > 25569 && value < 290000000) {
@@ -130,20 +148,35 @@ public class StaticMethod {
         }
     }
 
-    public static void createFileStream(MultipartFile file) {
+
+    /**
+     * 从给定文件中创建文件流，初始化Workbook
+     * 将Workbook 存储在全局映射中
+     *
+     */
+    public static void createFileStream() {
+        MultipartFile file = GlobalSession.getFile();
+
         byte[] bytes;
         Workbook workbook;
         try {
+            // 从 MultipartFile 获取字节数组
             bytes = file.getBytes();
+            // 从字节数组创建 ByteArrayInputStream
             ByteArrayInputStream fileStream = new ByteArrayInputStream(bytes);
+            // 从 ByteArrayInputStream 创建 Workbook
             workbook = WorkbookFactory.create(fileStream);
+            // 关闭 ByteArrayInputStream
             fileStream.close();
         } catch (IOException e) {
+            // 如果发生 I/O 错误，则抛出 RuntimeException
             throw new RuntimeException(e);
         }
+        // 创建一个映射来存储 Workbook
         Map<String, Object> map = new HashMap<>();
         map.put("workbook", workbook);
-        GlobalSession.set(map);
+        // 在 GlobalSession 中设置文件内容映射
+        GlobalSession.setFileContentMap(map);
     }
 
 }
