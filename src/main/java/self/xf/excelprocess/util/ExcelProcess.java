@@ -13,7 +13,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-// TODO：可删
+
 @Component
 public class ExcelProcess {
     public static ArrayList<Object> getSheetToJava(String path, Class clazz, Boolean useNewDate) throws Exception {
@@ -61,7 +61,7 @@ public class ExcelProcess {
                 // If the field is annotated with @EntryKey, generate a unique id
                 if (field.isAnnotationPresent(EntryKey.class)) {
                     if (String.class.equals(field.getType()) && ("undefined").equals(field.get(entity))) {
-                        String uid = UniqueIdGenerator.generateUniqueId();
+                        String uid = UniqueIdGenerator.generateUniqueId("");
                         field.set(entity, uid);
                     }
                 }

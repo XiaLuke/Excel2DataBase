@@ -58,7 +58,7 @@ public class ExcelToJava {
                 if("AUTO_ID".equals(field.getName())){
 //                    SnowflakeIdGenerator idGenerator = new SnowflakeIdGenerator();
 //                    long uid = idGenerator.nextId();
-                    String uid = UniqueIdGenerator.generateUniqueId();
+                    String uid = UniqueIdGenerator.generateUniqueId("");
                     field.set(entity,uid);
                 }
                 if("CREATE_DATE".equals(field.getName())){
