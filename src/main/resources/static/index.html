@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Excel转Sql</title>
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="./css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
             background-color: #f8f9fa;
@@ -93,9 +93,9 @@
     </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script src="js/jquery-3.5.1.slim.min.js"></script>
+<script src="js/popper.min.js"></script>
+<script src="js/bootstrap.min.js"></script>
 <script>
     document.querySelector('.custom-file-input').addEventListener('change', function (e) {
         var fileName = e.target.files[0].name;
@@ -192,6 +192,20 @@
                 alert('下载过程中发生错误: ' + error.message);
             });
     }
+
+    const socket = new WebSocket('ws://' + window.location.host + '/ws');
+    socket.onmessage = function(event){
+        const expiredFileName = event.data
+        const fileList = document.getElementById('processedFileList');
+        const items = Arrays.from(fileList.children);
+        items.forEach(item => {
+            const fileNameSpan = item.querySelsctor('span');
+            if(fileNameSpan && fileNameSpan.textContent === expiredFileName){
+                fileList.removeChild(item)
+            }
+        })
+    }
+
 </script>
 </body>
 </html>

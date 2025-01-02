@@ -106,15 +106,23 @@ public class FileToObject {
      */
     public StringBuilder generateInsertSql(List<Map<String, Object>> tableMap, String tableName) {
         StringBuilder sb = new StringBuilder();
+        SnowflakeIdGenerator idGenerator = new SnowflakeIdGenerator(1, 1); // 初始化SnowflakeIdGenerator
+
         for (Map<String, Object> lineMap : tableMap) {
             String sql = "INSERT INTO " + tableName + " (";
             Set<String> strings1 = lineMap.keySet();
             List<String> list1 = new ArrayList<>(strings1);
+
+            // 添加ID列
+            sql += "ID,";
             for (String s : list1) {
                 sql += s + ",";
             }
             sql = sql.substring(0, sql.length() - 1);
             sql += ") VALUES (";
+            // 添加ID值
+            String id = idGenerator.generateId();
+            sql += "'" + id + "',";
             for (String s : list1) {
                 Object o = lineMap.get(s);
                 if (o instanceof String) {

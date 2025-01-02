@@ -1,8 +1,13 @@
 package self.xf.excelprocess.util;
 
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.socket.CloseStatus;
+import org.springframework.web.socket.TextMessage;
+import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -36,6 +41,10 @@ public class GlobalSession {
     private static final long SESSION_TIMEOUT = 1 * 60 * 1000; // 1 minutes
     private static final long FILE_EXPIRY_TIME = 2 * 60 * 1000; // 2 分钟删除
 
+    // WebSocket sessions
+    private static final List<WebSocketSession> webSocketSessions = new CopyOnWriteArrayList<>();
+
+
     // 添加文件过期管理
     private static class FileExpiryInfo {
         String filePath;
@@ -52,6 +61,30 @@ public class GlobalSession {
     // 定期检查并删除过期文件
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
+    // WebSocket handler
+    public static class FileExpiryWebSocketHandler extends TextWebSocketHandler {
+        @Override
+        public void afterConnectionEstablished(WebSocketSession session) {
+            webSocketSessions.add(session);
+        }
+
+        @Override
+        public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
+            webSocketSessions.remove(session);
+        }
+    }
+
+    // Notify front-end about file expiry
+    private static void notifyFileExpiry(String fileName) {
+        for (WebSocketSession session : webSocketSessions) {
+            try {
+                session.sendMessage(new TextMessage(fileName));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     static {
         // 启动定期检查过期文件的任务
         scheduler.scheduleAtFixedRate(() -> {
@@ -67,6 +100,7 @@ public class GlobalSession {
                     File file = new File(info.filePath);
                     if (file.exists()) {
                         file.delete();
+                        notifyFileExpiry(file.getName()); // Notify front-end
                     }
                     iterator.remove();
                 }
