@@ -14,16 +14,6 @@ import java.util.Set;
 @Component
 public class DataBase {
 
-    public void generateDataBase() {
-        List<Map<String, Object>> mapList = GlobalSession.getObjectMapList();
-        mapList.forEach(item->{
-            Set<String> strings = item.keySet();
-            List<String> list = new ArrayList<>(strings);
-            String s = list.get(0);
-            Map<String,Object> map = (Map<String,Object>)item.get(s);
-
-        });
-    }
 
     private <T> T getType(Object type) {
         if (type.equals("String")) {

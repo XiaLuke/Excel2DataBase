@@ -9,34 +9,41 @@
         body {
             background-color: #f8f9fa;
         }
+
         .upload-container {
             max-width: 600px;
             margin: 100px auto;
             padding: 30px;
             background: white;
             border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
         }
+
         .upload-header {
             text-align: center;
             margin-bottom: 30px;
         }
+
         .upload-header h1 {
             color: #2c3e50;
             font-size: 2em;
             margin-bottom: 15px;
         }
+
         .upload-header p {
             color: #7f8c8d;
         }
+
         .custom-file {
             margin-bottom: 20px;
         }
+
         .btn-submit {
             width: 100%;
             padding: 12px;
             font-size: 1.1em;
         }
+
         .result-container {
             display: none;
             margin-top: 20px;
@@ -45,15 +52,18 @@
             border-radius: 8px;
             text-align: center;
         }
+
         .file-name {
             color: #2c3e50;
             margin-bottom: 15px;
             word-break: break-all;
         }
+
         .download-btn {
             background-color: #28a745;
             border-color: #28a745;
         }
+
         .download-btn:hover {
             background-color: #218838;
             border-color: #1e7e34;
@@ -87,25 +97,33 @@
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 <script>
-    document.querySelector('.custom-file-input').addEventListener('change', function(e) {
+    document.querySelector('.custom-file-input').addEventListener('change', function (e) {
         var fileName = e.target.files[0].name;
         var label = document.querySelector('.custom-file-label');
         label.textContent = fileName;
     });
 
-    document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    const pageSessionId = 'page_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+
+
+    document.getElementById('uploadForm').addEventListener('submit', function (e) {
         e.preventDefault();
 
         const formData = new FormData(this);
 
         fetch('/getSqlWithExcel', {
             method: 'POST',
+            headers: {
+                'Session-Id': pageSessionId
+            },
             body: formData
         })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
                     const fileList = document.getElementById('processedFileList');
+                    // 清空现有列表
+                    fileList.innerHTML = '';
 
                     // 遍历当前返回的文件名
                     data.fileNames.forEach(fileName => {
@@ -124,8 +142,8 @@
                             const downloadButton = document.createElement('button');
                             downloadButton.textContent = '下载';
                             downloadButton.classList.add('btn', 'btn-success', 'download-btn');
-                            downloadButton.addEventListener('click', function() {
-                                downloadFile( fileName);
+                            downloadButton.addEventListener('click', function () {
+                                downloadFile(fileName);
                             });
 
                             listItem.appendChild(fileNameSpan);
@@ -147,10 +165,16 @@
     });
 
     function downloadFile(fileName) {
-        fetch('/downloadSqlFile?requestName=' + fileName)
+        fetch('/downloadSqlFile?requestName=' + fileName,{
+            headers: {
+                'Session-Id': pageSessionId
+            }
+        })
             .then(response => {
                 if (!response.ok) {
-                    return response.text().then(text => { throw new Error(text) });
+                    return response.text().then(text => {
+                        throw new Error(text)
+                    });
                 }
                 return response.blob();
             })

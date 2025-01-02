@@ -2,10 +2,7 @@ package self.xf.excelprocess;
 
 import org.apache.commons.compress.utils.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import self.xf.excelprocess.util.FileToObject;
 import self.xf.excelprocess.util.GlobalSession;
@@ -26,12 +23,11 @@ public class TestController {
     @PostMapping("/getSqlWithExcel")
     public Map<String, Object> getSqlWithExcel(
             @RequestParam("file") MultipartFile file,
-            HttpServletRequest request) throws Exception {
+            @RequestHeader("Session-ID") String sessionId) throws Exception {
         // 设置文件信息
 
         Map<String, Object> result = new HashMap<>();
         try {
-            String sessionId = request.getSession().getId();
             if (GlobalSession.isSessionExpired(sessionId)) {
                 result.put("success", false);
                 result.put("message", "文件已超时被删除");
@@ -54,9 +50,8 @@ public class TestController {
     @GetMapping("/downloadSqlFile")
     public void downloadSqlFile(
             @RequestParam("requestName") String requestName,
-            HttpServletRequest request,
+            @RequestHeader("Session-ID") String sessionId,
             HttpServletResponse response) throws IOException {
-        String sessionId = request.getSession().getId();
 
         String fileName = GlobalSession.getLastProcessedFileName(sessionId, requestName);
         if (fileName == null) {
