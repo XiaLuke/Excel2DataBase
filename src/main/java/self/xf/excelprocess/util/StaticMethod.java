@@ -16,10 +16,10 @@ public class StaticMethod {
         // 根据全局文件创建工作流（Workbook）并保存到全局
         createFileStream();
 
-        Map<String, Object> globalMap = GlobalSession.getFileContentMap();
+        Map<String, Object> globalMap = GlobalSession.getOriginalDataMap();
         Workbook workbook = (Workbook) globalMap.get("workbook");
 
-        Map<String,Object> resultMap = new HashMap<>();
+        Map<String,Object> afterMap = new HashMap<>();
         // 一个 sheet 为一个表
         for (int sheetIndex = 0; sheetIndex < workbook.getNumberOfSheets(); sheetIndex++) {
             Sheet eachSheet = workbook.getSheetAt(sheetIndex);
@@ -34,7 +34,7 @@ public class StaticMethod {
             for (int i = 1; i < lastRowNum; i++) {
                 // 获取每行内容，若第一个单元格为空，跳过改行
                 Row eachRow = eachSheet.getRow(i);
-                if (eachRow.getCell(0) == null) {
+                if(eachRow == null || eachRow.getCell(0) == null) {
                     continue;
                 }
 
@@ -42,6 +42,9 @@ public class StaticMethod {
                 // 遍历首行的所有列信息
                 for (int j = 0; j < firstRow.getLastCellNum(); j++) {
                     Cell cell = eachRow.getCell(j); // 当前行各个列对应单元格
+                    if(cell == null) {
+                        continue;
+                    }
                     CellType cellType = cell.getCellType();
                     if (cellType == CellType.NUMERIC) {
                         double value = cell.getNumericCellValue();
@@ -58,10 +61,38 @@ public class StaticMethod {
                     list.add(map);
                 }
             }
-            List<Map<String, Object>> maps = reverseNumericToDate(list, sheetName);
-            resultMap.put(sheetName,maps);
+            List<Map<String, Object>> processData = reverseNumericToDate(list, sheetName);
+            if(list.size() == 0) {
+                continue;
+            }
+            Map<String, Object> oneLineData = list.get(0);
+            String tableSql = generateTableCreateSql(oneLineData,sheetName);
+            afterMap.put(sheetName+"_CREATETABLE", tableSql);
+            afterMap.put(sheetName, processData);
         }
-        GlobalSession.setListMap(resultMap);
+        GlobalSession.setListMap(afterMap);
+    }
+
+    private static String generateTableCreateSql(Map<String, Object> oneLineData, String tableName) {
+        StringBuilder sql = new StringBuilder();
+        sql.append("CREATE TABLE " + tableName + " (");
+        for (Map.Entry<String, Object> entry : oneLineData.entrySet()) {
+            String originalKey = entry.getKey();
+            String key = getUpper(originalKey);
+            Object value = entry.getValue();
+            if (value instanceof String) {
+                sql.append(key + " varchar(255) DEFAULT NULL COMMENT '" + originalKey + "',");
+            } else if (value instanceof Date) {
+                sql.append(key + " datetime DEFAULT NULL COMMENT '" + originalKey + "',");
+            } else if (value instanceof Double) {
+                sql.append(key + " decimal(10,2) DEFAULT NULL COMMENT '" + originalKey + "',");
+            } else if (value instanceof Integer) {
+                sql.append(key + " int(11) DEFAULT NULL COMMENT '" + originalKey + "',");
+            }
+        }
+        sql.deleteCharAt(sql.length() - 1);
+        sql.append(") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+        return sql.toString();
     }
 
     /**
@@ -69,10 +100,9 @@ public class StaticMethod {
      *
      * @param list
      * @param sheetName
-     * return 每一sheet中的数据，以行作为map返回list
      */
     private static List<Map<String, Object>> reverseNumericToDate(List<Map<String, Object>> list, String sheetName) {
-        list = list.stream().map(item -> {
+        list.stream().map(item -> {
             item.forEach((key, value) -> {
                 if (key.contains("时间") || key.contains("日期")) {
                     Date date = numericToDate(value);
@@ -103,6 +133,7 @@ public class StaticMethod {
             item = map;
             return item;
         }).collect(Collectors.toList());
+
     }
 
     /**
@@ -170,7 +201,8 @@ public class StaticMethod {
         Map<String, Object> map = new HashMap<>();
         map.put("workbook", workbook);
         // 在 GlobalSession 中设置文件内容映射
-        GlobalSession.setFileContentMap(map);
+        GlobalSession.setOriginalDataMap(map);
     }
+
 
 }

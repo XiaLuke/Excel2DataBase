@@ -141,6 +141,12 @@
             <artifactId>commons-io</artifactId>
             <version>2.13.0</version>
         </dependency>
+
+        <!-- 引入websocket做前后即时通信-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
