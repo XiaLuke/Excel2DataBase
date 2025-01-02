@@ -26,3 +26,6 @@ mybatis:
   configuration:
     jdbcTypeForNull: "null"
   type-aliases-package: self.xf.mapper
+
+process:
+  filePath:

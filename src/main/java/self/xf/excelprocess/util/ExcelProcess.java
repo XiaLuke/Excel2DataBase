@@ -61,8 +61,8 @@ public class ExcelProcess {
                 // If the field is annotated with @EntryKey, generate a unique id
                 if (field.isAnnotationPresent(EntryKey.class)) {
                     if (String.class.equals(field.getType()) && ("undefined").equals(field.get(entity))) {
-                        String uid = UniqueIdGenerator.generateUniqueId("");
-                        field.set(entity, uid);
+//                        String uid = UniqueIdGenerator.generateUniqueId("");
+//                        field.set(entity, uid);
                     }
                 }
             }
