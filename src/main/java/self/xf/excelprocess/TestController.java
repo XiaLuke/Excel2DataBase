@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import self.xf.excelprocess.util.FileToObject;
 import self.xf.excelprocess.util.GlobalSession;
+import self.xf.excelprocess.util.StaticMethod;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -58,7 +59,7 @@ public class TestController {
             throw new FileNotFoundException("没有找到可下载的文件");
         }
 
-        String path = "E:\\File\\JavaProject\\XF\\Excel2DataBase\\src\\main\\resources\\" + fileName;
+        String path = StaticMethod.getCurrentProjectDirectory() + fileName;
         File sqlFile = new File(path);
         if (!sqlFile.exists()) {
             throw new FileNotFoundException("SQL文件不存在");

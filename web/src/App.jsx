@@ -11,7 +11,7 @@ const App = () => {
     const pageSessionId = `page_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     useEffect(() => {
-        const ws = new WebSocket('ws://' + window.location.host + '/fileExpiry');
+        const ws = new WebSocket('ws://localhost:9898/fileExpiry');
         ws.onmessage = (event) => {
             console.log(event.data)
             const { fileName } = JSON.parse(event.data);

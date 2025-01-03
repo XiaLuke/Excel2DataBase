@@ -78,7 +78,7 @@ public class FileToObject {
                 stringBuilder.append(mapList.get(createTableSql));
                 stringBuilder.append(generateInsertSql(tableMap, tableName));
 
-                String path = "E:\\File\\JavaProject\\XF\\Excel2DataBase\\src\\main\\resources\\" + fileName;
+                String path = StaticMethod.getCurrentProjectDirectory() + fileName;
                 File file = new File(path);
 
                 try (FileWriter writer = new FileWriter(file, true)) {

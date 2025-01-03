@@ -27,5 +27,6 @@ mybatis:
     jdbcTypeForNull: "null"
   type-aliases-package: self.xf.mapper
 
-process:
-  filePath:
+logging:
+  level:
+    root: DEBUG # 设置全局日志级别为 INFO
