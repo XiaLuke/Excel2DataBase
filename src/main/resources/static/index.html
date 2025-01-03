@@ -79,7 +79,7 @@
         </div>
         <form id="uploadForm" action="/getSqlWithExcel" method="post" enctype="multipart/form-data">
             <div class="custom-file mb-3">
-                <input type="file" class="custom-file-input" id="file" name="file" required>
+                <input type="file" class="custom-file-input" id="file" name="file" accept=".xls,.xlsx" required>
                 <label class="custom-file-label" for="file">选择文件...</label>
             </div>
             <button type="submit" class="btn btn-primary btn-submit">开始处理</button>
@@ -87,7 +87,6 @@
     </div>
 
     <div class="upload-container result-container" id="resultContainer">
-        <!--            <div class="file-name">处理完成：<span id="processedFileName"></span></div>-->
         <div class="file-name">处理完成：</div>
         <ul id="processedFileList"></ul>
     </div>
@@ -165,7 +164,7 @@
     });
 
     function downloadFile(fileName) {
-        fetch('/downloadSqlFile?requestName=' + fileName,{
+        fetch('/downloadSqlFile?requestName=' + fileName, {
             headers: {
                 'Session-Id': pageSessionId
             }
@@ -193,17 +192,21 @@
             });
     }
 
-    const socket = new WebSocket('ws://' + window.location.host + '/ws');
-    socket.onmessage = function(event){
-        const expiredFileName = event.data
+    const socket = new WebSocket('ws://' + window.location.host + '/fileExpiry');
+    socket.onmessage = function (event) {
+        const expiredFileName = event.data;
         const fileList = document.getElementById('processedFileList');
-        const items = Arrays.from(fileList.children);
+        const items = Array.from(fileList.children);
         items.forEach(item => {
-            const fileNameSpan = item.querySelsctor('span');
-            if(fileNameSpan && fileNameSpan.textContent === expiredFileName){
-                fileList.removeChild(item)
+            const fileNameSpan = item.querySelector('span');
+            if (fileNameSpan && fileNameSpan.textContent === expiredFileName) {
+                fileList.removeChild(item);
             }
-        })
+        });
+        if(fileList.children.length === 0){
+            const resultContainer = document.getElementById("resultContainer");
+            resultContainer.parentNode.removeChild(resultContainer);
+        }
     }
 
 </script>

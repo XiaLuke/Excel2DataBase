@@ -9,11 +9,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 
 /**
  * 全局session，用于存储一些全局变量，比如excel的数据，用于后续的操作
@@ -24,13 +20,10 @@ import java.util.concurrent.Executors;
 public class GlobalSession {
     // 全局会话文件
     private static final ThreadLocal<MultipartFile> multipartFileMap = new ThreadLocal<>();
-
     // 保存每个sheet的原始数据
     private static final ThreadLocal<Map<String, Object>> originalDataMap = new ThreadLocal<>();
-
-    // 存储单个sheet整合后的list
+   // 存储单个sheet整合后的list
     private static final ThreadLocal<Map<String, Object>> afterProcessSheetMap = new ThreadLocal<>();
-
     // 使用Map存储用户的文件信息，key为sessionId
     private static final Map<String, List<String>> processedFileMap = new ConcurrentHashMap<>();
 
@@ -89,23 +82,28 @@ public class GlobalSession {
         // 启动定期检查过期文件的任务
         scheduler.scheduleAtFixedRate(() -> {
             long currentTime = System.currentTimeMillis();
-            Iterator<FileExpiryInfo> iterator = fileExpiryList.iterator();
+            List<FileExpiryInfo> expiredFiles = new ArrayList<>();
 
-            while (iterator.hasNext()) {
-                FileExpiryInfo info = iterator.next();
-                long timeRemaining = info.expiryTime - currentTime;
-                System.out.println("File: " + info.filePath + " will expire in: " + timeRemaining + " ms");
-
-                if (currentTime > info.expiryTime) {
-                    File file = new File(info.filePath);
-                    if (file.exists()) {
-                        file.delete();
-                        notifyFileExpiry(file.getName()); // Notify front-end
+            synchronized (fileExpiryList) {
+                Iterator<FileExpiryInfo> iterator = fileExpiryList.iterator();
+                while (iterator.hasNext()) {
+                    FileExpiryInfo info = iterator.next();
+                    if (currentTime > info.expiryTime) {
+                        expiredFiles.add(info);
+                        iterator.remove();
                     }
-                    iterator.remove();
                 }
             }
-        }, 0, 1, TimeUnit.MINUTES);
+
+            for (FileExpiryInfo info : expiredFiles) {
+                CompletableFuture.runAsync(() -> {
+                    File file = new File(info.filePath);
+                    if (file.exists() && file.delete()) {
+                        notifyFileExpiry(file.getName());
+                    }
+                });
+            }
+        }, 0, 30, TimeUnit.SECONDS);
     }
 
     public static void addFileWithExpiry(String filePath) {
