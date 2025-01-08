@@ -1,8 +1,7 @@
-
 import React, {useEffect, useState} from "react";
 import {Upload, Button, List, message, notification} from "antd";
-import { UploadOutlined, DownloadOutlined } from "@ant-design/icons";
-import { saveAs } from "file-saver";
+import {UploadOutlined, DownloadOutlined} from "@ant-design/icons";
+import {saveAs} from "file-saver";
 import "./App.css";
 
 const App = () => {
@@ -14,7 +13,8 @@ const App = () => {
         const ws = new WebSocket('ws://localhost:9898/fileExpiry');
         ws.onmessage = (event) => {
             console.log(event.data)
-            const { fileName } = JSON.parse(event.data);
+            // const { fileName } = JSON.parse(event.data);
+            const fileName = event.data;
             setProcessedFiles((prev) => prev.filter((name) => name !== fileName));
             notification.info({
                 message: '文件过期',
@@ -37,7 +37,7 @@ const App = () => {
         try {
             const response = await fetch("/api/getSqlWithExcel", {
                 method: "POST",
-                headers: { "Session-Id": pageSessionId },
+                headers: {"Session-Id": pageSessionId},
                 body: formData,
             });
             const data = await response.json();
@@ -60,7 +60,7 @@ const App = () => {
     const handleDownload = async (fileName) => {
         try {
             const response = await fetch(`/api/downloadSqlFile?requestName=${fileName}`, {
-                headers: { "Session-Id": pageSessionId },
+                headers: {"Session-Id": pageSessionId},
             });
 
             if (!response.ok) {
@@ -91,12 +91,12 @@ const App = () => {
                     onRemove={() => setFileList([])}
                     accept=".xls,.xlsx"
                 >
-                    <Button icon={<UploadOutlined />}>选择文件</Button>
+                    <Button icon={<UploadOutlined/>}>选择文件</Button>
                 </Upload>
                 <Button
                     type="primary"
                     onClick={handleUpload}
-                    style={{ marginTop: "15px" }}
+                    style={{marginTop: "15px"}}
                 >
                     开始处理
                 </Button>
@@ -112,7 +112,7 @@ const App = () => {
                                 actions={[
                                     <Button
                                         type="link"
-                                        icon={<DownloadOutlined />}
+                                        icon={<DownloadOutlined/>}
                                         onClick={() => handleDownload(fileName)}
                                     >
                                         下载
