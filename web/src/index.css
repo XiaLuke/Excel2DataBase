@@ -1,0 +1,4 @@
+/*全局取消垂直滚动条*/
+#root {
+    overflow-y: hidden;
+}
