@@ -16,7 +16,7 @@ public class StaticMethod {
         // 根据全局文件创建工作流（Workbook）并保存到全局
         createFileStream();
 
-        Map<String, Object> globalMap = GlobalSession.getOriginalDataMap();
+        Map<String, Object> globalMap = GlobalStore.getOriginalDataMap();
         Workbook workbook = (Workbook) globalMap.get("workbook");
 
         Map<String,Object> afterMap = new HashMap<>();
@@ -70,7 +70,7 @@ public class StaticMethod {
             afterMap.put(sheetName+"_CREATETABLE", tableSql);
             afterMap.put(sheetName, processData);
         }
-        GlobalSession.setListMap(afterMap);
+        GlobalStore.setListMap(afterMap);
     }
 
     private static String generateTableCreateSql(Map<String, Object> oneLineData, String tableName) {
@@ -180,7 +180,7 @@ public class StaticMethod {
      *
      */
     public static void createFileStream() {
-        MultipartFile file = GlobalSession.getFile();
+        MultipartFile file = GlobalStore.getFile();
 
         byte[] bytes;
         Workbook workbook;
@@ -201,7 +201,7 @@ public class StaticMethod {
         Map<String, Object> map = new HashMap<>();
         map.put("workbook", workbook);
         // 在 GlobalSession 中设置文件内容映射
-        GlobalSession.setOriginalDataMap(map);
+        GlobalStore.setOriginalDataMap(map);
     }
     /**
      * 获取当前项目所在的目录

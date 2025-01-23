@@ -19,9 +19,9 @@ import java.util.concurrent.*;
  * @author XF
  * @date 2023/12/22
  */
-public class GlobalSession {
+public class GlobalStore {
 
-    private static final Logger logger = LoggerFactory.getLogger(GlobalSession.class);
+    private static final Logger logger = LoggerFactory.getLogger(GlobalStore.class);
     // 全局会话文件
     private static final ThreadLocal<MultipartFile> multipartFileMap = new ThreadLocal<>();
     // 保存每个sheet的原始数据
@@ -116,6 +116,11 @@ public class GlobalSession {
     }
 
 
+    /**
+     * 存储 .sql 文件过期的时间
+     *
+     * @param filePath
+     */
     public static void addFileWithExpiry(String filePath) {
         long expiryTime = System.currentTimeMillis() + FILE_EXPIRY_TIME;
         fileExpiryList.add(new FileExpiryInfo(filePath, expiryTime));

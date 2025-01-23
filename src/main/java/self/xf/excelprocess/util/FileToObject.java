@@ -18,7 +18,7 @@ public class FileToObject {
 
     public String getSqlWithExcel(String sessionId) throws Exception {
         // 获取文件原始名与时间戳，尽量确保文件名不会重复
-        String originalFileName = GlobalSession.getFile().getOriginalFilename();
+        String originalFileName = GlobalStore.getFile().getOriginalFilename();
         String timestamp = String.valueOf(System.currentTimeMillis());
 
         if (originalFileName.endsWith(".xlsx")) {
@@ -29,7 +29,7 @@ public class FileToObject {
 
         // 添加时间戳确保文件名唯一
         String sqlFileName = originalFileName + "_" + timestamp + ".sql";
-        GlobalSession.setLastProcessedFileName(sessionId, sqlFileName);
+        GlobalStore.setLastProcessedFileName(sessionId, sqlFileName);
 
         // 处理内容，写入文件
         writeContentToSql(sqlFileName);
@@ -52,7 +52,7 @@ public class FileToObject {
      */
     public void writeContentToSql(String fileName) {
         StaticMethod.init();
-        Map<String, Object> mapList = GlobalSession.getListMap();
+        Map<String, Object> mapList = GlobalStore.getListMap();
 
         List<Map<String, Object>> tableMap;
         if (mapList.size() < 1) {
@@ -89,7 +89,7 @@ public class FileToObject {
                     writer.flush();
 
                     // 添加文件到过期管理
-                    GlobalSession.addFileWithExpiry(path);
+                    GlobalStore.addFileWithExpiry(path);
 
                 } catch (IOException ex) {
                     ex.printStackTrace();

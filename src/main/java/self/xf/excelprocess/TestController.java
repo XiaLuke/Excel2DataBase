@@ -5,10 +5,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import self.xf.excelprocess.util.FileToObject;
-import self.xf.excelprocess.util.GlobalSession;
+import self.xf.excelprocess.util.GlobalStore;
 import self.xf.excelprocess.util.StaticMethod;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.net.URLEncoder;
@@ -29,18 +28,18 @@ public class TestController {
 
         Map<String, Object> result = new HashMap<>();
         try {
-            if (GlobalSession.isSessionExpired(sessionId)) {
+            if (GlobalStore.isSessionExpired(sessionId)) {
                 result.put("success", false);
                 result.put("message", "文件已超时被删除");
                 return result;
             }
-            GlobalSession.setFile(sessionId, file);
+            GlobalStore.setFile(sessionId, file);
 
             // 处理文件
             String fileName = fileToObject.getSqlWithExcel(sessionId);
 
             result.put("success", true);
-            result.put("fileNames", GlobalSession.getLastProcessedFileNames(sessionId));
+            result.put("fileNames", GlobalStore.getLastProcessedFileNames(sessionId));
         } catch (Exception e) {
             result.put("success", false);
             result.put("message", e.getMessage());
@@ -54,7 +53,7 @@ public class TestController {
             @RequestHeader("Session-ID") String sessionId,
             HttpServletResponse response) throws IOException {
 
-        String fileName = GlobalSession.getLastProcessedFileName(sessionId, requestName);
+        String fileName = GlobalStore.getLastProcessedFileName(sessionId, requestName);
         if (fileName == null) {
             throw new FileNotFoundException("没有找到可下载的文件");
         }
@@ -73,7 +72,7 @@ public class TestController {
             IOUtils.copy(in, out);
             out.flush();
         } finally {
-            GlobalSession.removeProcessedFile(sessionId);
+            GlobalStore.removeProcessedFile(sessionId);
         }
     }
 }
