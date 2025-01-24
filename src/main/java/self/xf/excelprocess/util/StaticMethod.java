@@ -12,9 +12,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class StaticMethod {
-    public static void init() {
+    public static void init(MultipartFile file) {
         // 根据全局文件创建工作流（Workbook）并保存到全局
-        createFileStream();
+        createFileStream(file);
 
         Map<String, Object> globalMap = GlobalStore.getOriginalDataMap();
         Workbook workbook = (Workbook) globalMap.get("workbook");
@@ -179,8 +179,7 @@ public class StaticMethod {
      * 将Workbook 存储在全局映射中
      *
      */
-    public static void createFileStream() {
-        MultipartFile file = GlobalStore.getFile();
+    public static void createFileStream(MultipartFile file) {
 
         byte[] bytes;
         Workbook workbook;

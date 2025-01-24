@@ -2,6 +2,7 @@ package self.xf.excelprocess.util;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -16,9 +17,9 @@ public class FileToObject {
     @Autowired
     DataBase base;
 
-    public String getSqlWithExcel(String sessionId) throws Exception {
+    public String getSqlWithExcel(String sessionId, MultipartFile file) {
         // 获取文件原始名与时间戳，尽量确保文件名不会重复
-        String originalFileName = GlobalStore.getFile().getOriginalFilename();
+        String originalFileName = file.getOriginalFilename();
         String timestamp = String.valueOf(System.currentTimeMillis());
 
         if (originalFileName.endsWith(".xlsx")) {
@@ -29,10 +30,10 @@ public class FileToObject {
 
         // 添加时间戳确保文件名唯一
         String sqlFileName = originalFileName + "_" + timestamp + ".sql";
-        GlobalStore.setLastProcessedFileName(sessionId, sqlFileName);
+        GlobalStore.setFileForSession(sessionId, sqlFileName);
 
         // 处理内容，写入文件
-        writeContentToSql(sqlFileName);
+        writeContentToSql(sqlFileName,file);
         return sqlFileName;
     }
 
@@ -50,8 +51,8 @@ public class FileToObject {
      * 写入sql文件
      * @param fileName
      */
-    public void writeContentToSql(String fileName) {
-        StaticMethod.init();
+    public void writeContentToSql(String fileName,MultipartFile file) {
+        StaticMethod.init(file);
         Map<String, Object> mapList = GlobalStore.getListMap();
 
         List<Map<String, Object>> tableMap;
@@ -79,11 +80,11 @@ public class FileToObject {
                 stringBuilder.append(generateInsertSql(tableMap, tableName));
 
                 String path = StaticMethod.getCurrentProjectDirectory() + fileName;
-                File file = new File(path);
+                File sqlFile = new File(path);
 
-                try (FileWriter writer = new FileWriter(file, true)) {
-                    if (!file.exists()) {
-                        file.createNewFile();
+                try (FileWriter writer = new FileWriter(sqlFile, true)) {
+                    if (!sqlFile.exists()) {
+                        sqlFile.createNewFile();
                     }
                     writer.write(stringBuilder.toString());
                     writer.flush();

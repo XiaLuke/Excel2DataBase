@@ -166,7 +166,7 @@ public class GlobalStore {
     }
 
     public static void deleteAllSqlFilesForSession(String sessionId) {
-        List<String> fileName = getLastProcessedFileName(sessionId);
+        List<String> fileName = getSessionFiles(sessionId);
         if (fileName != null) {
             String path = StaticMethod.getCurrentProjectDirectory() + fileName;
             File file = new File(path);
@@ -181,17 +181,17 @@ public class GlobalStore {
         return processedFileMap.get(sessionId) == null ? new ArrayList<>() : processedFileMap.get(sessionId);
     }
 
-    public static void setLastProcessedFileName(String sessionId, String fileName) {
-        List<String> names = getLastProcessedFileName(sessionId);
+    public static void setFileForSession(String sessionId, String fileName) {
+        List<String> names = getSessionFiles(sessionId);
         names.add(fileName);
         processedFileMap.put(sessionId, names);
     }
 
-    public static List<String> getLastProcessedFileName(String sessionId) {
+    public static List<String> getSessionFiles(String sessionId) {
         return processedFileMap.get(sessionId) == null ? new ArrayList<>() : processedFileMap.get(sessionId);
     }
 
-    public static String getLastProcessedFileName(String sessionId, String fileName) {
+    public static String getFileNameWithSession(String sessionId, String fileName) {
         List<String> fileNames = processedFileMap.get(sessionId);
         if (fileNames != null) {
             for (String name : fileNames) {

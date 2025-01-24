@@ -20,6 +20,14 @@ public class TestController {
     FileToObject fileToObject;
 
 
+    /**
+     * 将上传的excel 文件进行处理转为.sql文件，
+     * 得到sql文件名，对其设置过期时间
+     * @param file
+     * @param sessionId
+     * @return {@link Map}<{@link String}, {@link Object}>
+     * @throws Exception
+     */
     @PostMapping("/getSqlWithExcel")
     public Map<String, Object> getSqlWithExcel(
             @RequestParam("file") MultipartFile file,
@@ -36,7 +44,7 @@ public class TestController {
             GlobalStore.setFile(sessionId, file);
 
             // 处理文件
-            String fileName = fileToObject.getSqlWithExcel(sessionId);
+            String fileName = fileToObject.getSqlWithExcel(sessionId,file);
 
             result.put("success", true);
             result.put("fileNames", GlobalStore.getLastProcessedFileNames(sessionId));
@@ -53,7 +61,7 @@ public class TestController {
             @RequestHeader("Session-ID") String sessionId,
             HttpServletResponse response) throws IOException {
 
-        String fileName = GlobalStore.getLastProcessedFileName(sessionId, requestName);
+        String fileName = GlobalStore.getFileNameWithSession(sessionId, requestName);
         if (fileName == null) {
             throw new FileNotFoundException("没有找到可下载的文件");
         }
