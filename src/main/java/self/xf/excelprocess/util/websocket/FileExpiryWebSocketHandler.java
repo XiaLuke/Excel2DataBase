@@ -5,6 +5,7 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -16,9 +17,14 @@ public class FileExpiryWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         // 获取 sessionId 并存储到映射中
-        String sessionId = session.getId();
-        sessionMap.put(sessionId, session);
-        System.out.println("WebSocket connected: " + sessionId);
+        String sessionId = extractSessionIdFromUri(session.getUri());
+        if (sessionId != null) {
+            // 将 sessionId 和 WebSocketSession 存储到 Map 中
+            sessionMap.put(sessionId, session);
+            System.out.println("WebSocket connected with custom sessionId: " + sessionId);
+        } else {
+            System.out.println("WebSocket connected, but no sessionId provided.");
+        }
     }
 
     @Override
@@ -43,4 +49,24 @@ public class FileExpiryWebSocketHandler extends TextWebSocketHandler {
             System.err.println("Session " + sessionId + " is not open or does not exist.");
         }
     }
+
+    // 从 URI 中提取 sessionId
+    private String extractSessionIdFromUri(URI uri) {
+        if (uri == null) {
+            return null;
+        }
+        String query = uri.getQuery();
+        if (query == null || !query.contains("sessionId=")) {
+            return null;
+        }
+        // 解析查询参数中的 sessionId
+        String[] params = query.split("&");
+        for (String param : params) {
+            if (param.startsWith("sessionId=")) {
+                return param.substring("sessionId=".length());
+            }
+        }
+        return null;
+    }
+
 }

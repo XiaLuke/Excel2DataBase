@@ -14,6 +14,7 @@ public class FileExpiryManager {
     private static final PriorityQueue<FileExpiryInfo> fileExpiryQueue = new PriorityQueue<>();
     private static final ReentrantLock lock = new ReentrantLock();
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
     // 文件过期信息类
     private static class FileExpiryInfo implements Comparable<FileExpiryInfo> {
         String filePath;
@@ -36,7 +37,7 @@ public class FileExpiryManager {
     public static String getFilePath(String sessionId, String fileName) {
         fileName = StaticMethod.getCurrentProjectDirectory() + fileName;
         for (FileExpiryInfo expiryInfo : fileExpiryQueue) {
-            if(expiryInfo.sessionId.equals(sessionId) && expiryInfo.filePath.equals(fileName)){
+            if (expiryInfo.sessionId.equals(sessionId) && expiryInfo.filePath.equals(fileName)) {
                 return expiryInfo.filePath;
             }
         }
@@ -54,7 +55,7 @@ public class FileExpiryManager {
         }
     }
 
-    public static void shutDown(){
+    public static void shutDown() {
         lock.lock();
         try {
             while (!fileExpiryQueue.isEmpty()) {
@@ -87,7 +88,7 @@ public class FileExpiryManager {
                         if (file.exists() && file.delete()) {
                             System.out.println("Deleted expired file: " + info.filePath);
                             // 通过 WebSocket 通知前端
-                            FileExpiryWebSocketHandler.sendMessageToSession(info.sessionId, "File expired: " + info.filePath);
+                            FileExpiryWebSocketHandler.sendMessageToSession(info.sessionId, file.getName());
                         } else {
                             System.out.println("Failed to delete file: " + info.filePath);
                         }

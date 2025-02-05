@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, {useEffect, useState,useRef} from "react";
 import {Upload, Button, List, message, notification} from "antd";
 import {UploadOutlined, DownloadOutlined} from "@ant-design/icons";
 import {saveAs} from "file-saver";
@@ -7,14 +7,17 @@ import "./App.css";
 const App = () => {
     const [fileList, setFileList] = useState([]);
     const [processedFiles, setProcessedFiles] = useState([]);
-    const pageSessionId = `page_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // const pageSessionId = `page_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const pageSessionIdRef = useRef(`page_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+    const pageSessionId = pageSessionIdRef.current;
 
     useEffect(() => {
-        const ws = new WebSocket('ws://localhost:9898/fileExpiry');
+        const ws = new WebSocket(`ws://localhost:9898/fileExpiry?sessionId=${pageSessionId}`);
         ws.onmessage = (event) => {
             console.log(event.data)
             // const { fileName } = JSON.parse(event.data);
             const fileName = event.data;
+            console.log(processedFiles)
             setProcessedFiles((prev) => prev.filter((name) => name !== fileName));
             notification.info({
                 message: '文件过期',
@@ -43,7 +46,7 @@ const App = () => {
             const data = await response.json();
 
             if (data.success) {
-                setProcessedFiles((prev) => [...new Set([...prev, ...data.fileNames])]);
+                setProcessedFiles((prev) => [...new Set([...prev, data.fileNames])]);
                 message.success("文件处理成功");
             } else {
                 message.error(`处理失败: ${data.message}`);
