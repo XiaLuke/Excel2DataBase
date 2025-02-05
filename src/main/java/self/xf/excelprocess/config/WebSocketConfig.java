@@ -4,7 +4,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
-import self.xf.excelprocess.util.GlobalStore.FileExpiryWebSocketHandler;
+import self.xf.excelprocess.util.websocket.FileExpiryWebSocketHandler;
 
 /**
  * WebSocketConfig 是一个配置类，用于启用 WebSocket 支持

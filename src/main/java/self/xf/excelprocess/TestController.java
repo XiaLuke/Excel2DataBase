@@ -4,9 +4,8 @@ import org.apache.commons.compress.utils.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import self.xf.excelprocess.util.FileToObject;
-import self.xf.excelprocess.util.GlobalStore;
-import self.xf.excelprocess.util.StaticMethod;
+import self.xf.excelprocess.util.file.FileExpiryManager;
+import self.xf.excelprocess.util.file.FileToObject;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
@@ -21,7 +20,7 @@ public class TestController {
 
 
     /**
-     * 将上传的excel 文件进行处理转为.sql文件，
+     * 接收文件，将文件存储到本地 文件进行处理转为.sql文件，
      * 得到sql文件名，对其设置过期时间
      * @param file
      * @param sessionId
@@ -36,18 +35,11 @@ public class TestController {
 
         Map<String, Object> result = new HashMap<>();
         try {
-            if (GlobalStore.isSessionExpired(sessionId)) {
-                result.put("success", false);
-                result.put("message", "文件已超时被删除");
-                return result;
-            }
-            GlobalStore.setFile(sessionId, file);
-
             // 处理文件
             String fileName = fileToObject.getSqlWithExcel(sessionId,file);
 
             result.put("success", true);
-            result.put("fileNames", GlobalStore.getLastProcessedFileNames(sessionId));
+            result.put("fileNames", fileName);
         } catch (Exception e) {
             result.put("success", false);
             result.put("message", e.getMessage());
@@ -61,26 +53,21 @@ public class TestController {
             @RequestHeader("Session-ID") String sessionId,
             HttpServletResponse response) throws IOException {
 
-        String fileName = GlobalStore.getFileNameWithSession(sessionId, requestName);
-        if (fileName == null) {
-            throw new FileNotFoundException("没有找到可下载的文件");
-        }
-
-        String path = StaticMethod.getCurrentProjectDirectory() + fileName;
+        String path = FileExpiryManager.getFilePath(sessionId,requestName);
         File sqlFile = new File(path);
         if (!sqlFile.exists()) {
             throw new FileNotFoundException("SQL文件不存在");
         }
 
         response.setContentType("application/octet-stream");
-        response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode(fileName, "UTF-8"));
+        response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode(requestName, "UTF-8"));
 
         try (InputStream in = new FileInputStream(sqlFile);
              OutputStream out = response.getOutputStream()) {
             IOUtils.copy(in, out);
             out.flush();
         } finally {
-            GlobalStore.removeProcessedFile(sessionId);
+//            GlobalStore.removeProcessedFile(sessionId);
         }
     }
 }
