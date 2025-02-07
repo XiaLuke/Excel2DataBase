@@ -17,6 +17,7 @@ spring:
     port: 6379
     password: Abc@1234567
     database: 5
+    enable: false
 #    driver-class-name: dm.jdbc.driver.DmDriver
 #    url: jdbc:dm://183.66.102.189:8000/BIZ_HALFWAYCUST?zeroDateTimeBehavior=convertToNull&useUnicode=true&characterEncoding=UTF-8
 #    username: BIZ_HALFWAYCUST

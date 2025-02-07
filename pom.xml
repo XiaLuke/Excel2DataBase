@@ -10,13 +10,19 @@
     </parent>
     <groupId>self.xf</groupId>
     <artifactId>ExcelProcess</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.0</version>
     <name>ExcelProcess</name>
     <description>ExcelProcess</description>
+    <packaging>jar</packaging>
     <properties>
         <java.version>17</java.version>
     </properties>
     <dependencies>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+        </dependency>
         <!--xls(03)-->
         <dependency>
             <groupId>org.apache.poi</groupId>
